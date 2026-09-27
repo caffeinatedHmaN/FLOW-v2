@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLOW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: #0A0908;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    color: #E8E6E3;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone {
+    width: 380px; height: 800px;
+    background: #050505;
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 100px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+  .screens { position: relative; height: 100%; }
+  .screen {
+    position: absolute; inset: 0;
+    padding: 30px 18px 110px;
+    overflow-y: auto; scrollbar-width: none;
+    opacity: 0; pointer-events: none;
+    transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { opacity: 1; pointer-events: auto; }
+
+  .hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .hdr-l { font-family: 'Doto', monospace; font-size: 28px; font-weight: 800; letter-spacing: 2px; color: #FFFFFF; line-height: 1; }
+  .hdr-r { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #777; display: flex; align-items: center; gap: 6px; margin-top: 4px; text-align: right; }
+  .hdr-r .time-live { color: #E8E6E3; }
+  .hdr-status { width: 6px; height: 6px; border-radius: 50%; background: #FF4400; box-shadow: 0 0 8px rgba(255,68,0,0.9); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .hdr-sub { font-family: 'Doto', monospace; font-size: 11px; font-weight: 600; letter-spacing: 2px; color: #444; margin-bottom: 18px; }
+
+  .greeting { margin-bottom: 20px; }
+  .greeting-l1 { font-family: 'Doto', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #666; margin-bottom: 6px; }
+  .greeting-l2 { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.4px; color: #E8E6E3; line-height: 1.3; }
+  .greeting-l2 .dim { color: #555; font-weight: 400; }
+
+  .card { background: #0C0C0C; border: 1px solid #161616; border-radius: 18px; padding: 18px 16px 16px; position: relative; margin-bottom: 10px; overflow: hidden; transition: border-color 300ms ease; }
+  .card:hover { border-color: #222; }
+  .idx { position: absolute; top: 12px; left: 14px; font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #555; }
+  .idx-num { color: #888; margin-right: 4px; }
+
+  .today-grid { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; }
+  .today-num { font-family: 'Doto', monospace; font-size: 62px; font-weight: 800; letter-spacing: -1px; line-height: 0.85; color: #FFFFFF; font-variant-numeric: tabular-nums; }
+  .today-num .u { font-size: 22px; font-weight: 600; color: #666; letter-spacing: 0; margin-left: 4px; }
+  .today-meta { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 10px; color: #777; letter-spacing: 0.5px; font-weight: 500; }
+  .today-meta strong { color: #FF4400; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .today-goal { padding: 2px 6px; background: #161616; border-radius: 4px; font-size: 9px; color: #888; font-family: 'Doto', monospace; letter-spacing: 1px; font-weight: 600; }
+
+  .arc-wrap { width: 92px; height: 92px; position: relative; flex-shrink: 0; }
+  .arc-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .arc-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .arc-pct { font-family: 'Doto', monospace; font-size: 20px; font-weight: 800; color: #FFFFFF; line-height: 1; letter-spacing: -0.5px; }
+  .arc-lbl { font-family: 'Doto', monospace; font-size: 7px; font-weight: 700; letter-spacing: 1.4px; color: #666; }
+
+  .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .card-row .card { margin-bottom: 0; }
+
+  .signal-wrap { display: flex; flex-direction: column; align-items: center; padding: 4px 0 2px; }
+  .signal-arc { width: 96px; height: 96px; position: relative; margin-bottom: 8px; }
+  .signal-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .signal-big { font-family: 'Doto', monospace; font-size: 30px; font-weight: 800; color: #FFFFFF; line-height: 1; }
+  .signal-sub { font-family: 'Doto', monospace; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: #666; margin-top: 3px; }
+  .signal-foot { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; color: #FF4400; text-align: center; }
+
+  .tasks-wrap { display: flex; flex-direction: column; align-items: center; padding: 4px 0 2px; }
+  .tasks-num { font-family: 'Doto', monospace; font-size: 40px; font-weight: 800; color: #FFFFFF; line-height: 1; letter-spacing: -1px; margin-bottom: 12px; }
+  .tasks-num .slash { color: #444; margin: 0 2px; font-weight: 400; }
+  .tasks-num .den { color: #666; font-size: 26px; }
+  .tasks-bars { display: flex; gap: 4px; margin-bottom: 8px; }
+  .tasks-bar { width: 10px; height: 4px; border-radius: 2px; background: #1A1A1A; }
+  .tasks-bar.on { background: #FFFFFF; }
+  .tasks-bar.mid { background: #FF4400; }
+  .tasks-foot { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; color: #666; }
+
+  .hour-bar { display: flex; gap: 5px; height: 76px; position: relative; margin-bottom: 12px; }
+  .hour-seg { flex: 1; border-radius: 9999px; background: #141414; position: relative; overflow: hidden; cursor: pointer; transition: transform 400ms cubic-bezier(0.34, 1.4, 0.5, 1); border: 1px solid #1A1A1A; }
+  .hour-seg:hover { transform: translateY(-3px); }
+  .hour-seg .fill { position: absolute; inset: 0; background: #E8E6E3; border-radius: 9999px; transform-origin: bottom; }
+  .hour-seg.s-full .fill { transform: scaleY(1); }
+  .hour-seg.s-half .fill { background: linear-gradient(180deg, #141414 0%, #141414 48%, #E8E6E3 52%, #E8E6E3 100%); }
+  .hour-seg.s-half::after { content: ''; position: absolute; left: 0; right: 0; top: 44%; height: 2px; background: #FF4400; border-radius: 2px; z-index: 3; box-shadow: 0 0 8px rgba(255,68,0,0.6); }
+  .hour-seg.empty::before { content: ''; position: absolute; inset: 0; background-image: repeating-linear-gradient(180deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 7px); border-radius: 9999px; }
+
+  .now-marker { position: absolute; top: -14px; bottom: -12px; width: 1px; background: #FF4400; z-index: 4; pointer-events: none; box-shadow: 0 0 6px rgba(255,68,0,0.8); }
+  .now-marker::before { content: 'NOW'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-family: 'Doto', monospace; font-size: 7px; font-weight: 800; letter-spacing: 1px; color: #FF4400; background: #0C0C0C; padding: 1px 3px; border-radius: 2px; white-space: nowrap; }
+  .now-marker::after { content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: #FF4400; box-shadow: 0 0 8px rgba(255,68,0,0.9); }
+
+  .hour-labels { display: flex; gap: 5px; }
+  .hour-labels span { flex: 1; text-align: center; font-family: 'Doto', monospace; font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px; color: #444; font-variant-numeric: tabular-nums; }
+  .hour-labels span.on { color: #999; }
+  .hour-labels span.active { color: #FF4400; }
+
+  .chart-wrap { position: relative; padding: 6px 2px 0; }
+  .chart-svg { width: 100%; height: 108px; display: block; overflow: visible; }
+  .day-labels { display: flex; justify-content: space-between; padding: 8px 4px 0; font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; color: #555; }
+  .day-labels .today { color: #FF4400; }
+
+  .chart-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #161616; }
+  .chart-stat { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; color: #666; }
+  .chart-stat strong { color: #E8E6E3; font-family: 'Doto', monospace; font-size: 13px; letter-spacing: 0; margin-left: 4px; }
+  .chart-stat.up strong { color: #FF4400; }
+
+  .session { background: #0C0C0C; border: 1px solid #161616; border-radius: 18px; padding: 16px 16px 14px; margin-bottom: 10px; position: relative; overflow: hidden; }
+  .session-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .session-tag { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; color: #888; display: flex; align-items: center; gap: 8px; }
+  .session-tag .idx-num { color: #FF4400; margin-right: 0; }
+  .session-status { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; color: #777; display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #FF4400; box-shadow: 0 0 8px rgba(255,68,0,0.9); animation: blink 1.8s ease-in-out infinite; }
+
+  .session-time { font-family: 'Doto', monospace; font-size: 54px; font-weight: 800; letter-spacing: -2px; line-height: 0.9; color: #FFFFFF; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; margin-bottom: 14px; }
+  .session-time .colon { color: #FF4400; animation: colonBlink 1s step-end infinite; margin: 0 -2px; }
+  @keyframes colonBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.25; } }
+  .session-time .ms { font-size: 18px; color: #444; margin-left: 6px; letter-spacing: -0.5px; font-weight: 600; }
+
+  .waveform { display: flex; align-items: center; gap: 3px; height: 22px; margin-bottom: 14px; }
+  .waveform .w { width: 3px; height: 3px; border-radius: 50%; background: #333; flex-shrink: 0; }
+  .waveform .w.on { background: #FF4400; box-shadow: 0 0 6px rgba(255,68,0,0.7); }
+
+  .session-foot { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 14px; border-top: 1px solid #161616; }
+  .session-sub { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #666; line-height: 1.6; }
+  .session-sub strong { color: #E8E6E3; }
+
+  .play { width: 48px; height: 48px; border-radius: 50%; background: #FF4400; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 400ms cubic-bezier(0.34, 1.4, 0.5, 1); box-shadow: 0 0 24px rgba(255,68,0,0.5); }
+  .play:hover { transform: scale(1.06); }
+  .play:active { transform: scale(0.92); }
+
+  .nav-wrap { position: absolute; bottom: 20px; left: 18px; right: 18px; z-index: 100; }
+  .nav { display: flex; justify-content: space-between; padding: 6px; background: #0C0C0C; border: 1px solid #161616; border-radius: 9999px; }
+  .nav-item { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 450ms cubic-bezier(0.34, 1.4, 0.5, 1); }
+  .nav-item svg { width: 18px; height: 18px; stroke: #444; stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 300ms ease; }
+  .nav-item.active { background: #FF4400; box-shadow: 0 0 20px rgba(255,68,0,0.5); }
+  .nav-item.active svg { stroke: #FFFFFF; stroke-width: 2; }
+  .nav-item:hover:not(.active) svg { stroke: #888; }
+
+  .range-tabs { display: flex; gap: 4px; padding: 4px; background: #0C0C0C; border: 1px solid #161616; border-radius: 9999px; margin-bottom: 16px; }
+  .range-tab { flex: 1; padding: 9px 0; text-align: center; font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #666; border-radius: 9999px; cursor: pointer; transition: all 300ms ease; }
+  .range-tab.active { background: #FF4400; color: #FFFFFF; box-shadow: 0 0 16px rgba(255,68,0,0.4); }
+
+  .compare-legend { display: flex; gap: 16px; margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #666; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-dot.orange { background: #FF4400; box-shadow: 0 0 6px rgba(255,68,0,0.7); }
+  .legend-dot.gray { background: #444; }
+
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #161616; border: 1px solid #161616; border-radius: 16px; overflow: hidden; margin-bottom: 10px; }
+  .metric { background: #0C0C0C; padding: 16px 14px; }
+  .metric-lbl { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; color: #666; margin-bottom: 8px; }
+  .metric-val { font-family: 'Doto', monospace; font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .metric-val .u { font-size: 14px; color: #666; font-weight: 600; margin-left: 2px; }
+  .metric-delta { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-top: 6px; color: #555; }
+  .metric-delta.up { color: #FF4400; }
+
+  .task-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #0F0F0F; cursor: pointer; transition: opacity 300ms ease; position: relative; }
+  .task-row:last-child { border-bottom: none; }
+  .task-row.done { opacity: 0.4; }
+  .task-row.done .task-title { text-decoration: line-through; text-decoration-color: #555; }
+
+  .checkbox { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all 300ms ease; position: relative; }
+  .task-row.done .checkbox { background: #FF4400; border-color: #FF4400; box-shadow: 0 0 12px rgba(255,68,0,0.5); }
+  .checkbox svg { width: 9px; height: 9px; stroke: #FFFFFF; stroke-width: 3; fill: none; opacity: 0; }
+  .task-row.done .checkbox svg { opacity: 1; }
+  .checkbox.due-today::after { content: ''; position: absolute; top: -3px; right: -3px; width: 6px; height: 6px; border-radius: 50%; background: #FF4400; box-shadow: 0 0 6px rgba(255,68,0,0.8); }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 13px; font-weight: 500; color: #E8E6E3; line-height: 1.3; margin-bottom: 5px; }
+  .task-meta { display: flex; gap: 6px; align-items: center; font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #666; flex-wrap: wrap; }
+  .task-meta .cat { padding: 2px 6px; border-radius: 4px; background: #161616; color: #999; }
+  .task-meta .chip-repeat { padding: 2px 6px; border-radius: 4px; background: rgba(255,68,0,0.1); color: #FF4400; display: inline-flex; align-items: center; gap: 3px; }
+  .task-meta .chip-block { padding: 2px 6px; border-radius: 4px; background: rgba(92,122,168,0.15); color: #8AA6D6; }
+
+  .task-del { opacity: 0; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 200ms ease; flex-shrink: 0; }
+  .task-del svg { width: 12px; height: 12px; stroke: #666; stroke-width: 2; fill: none; }
+  .task-row:hover .task-del { opacity: 1; }
+  .task-del:hover { background: #1A1A1A; }
+  .task-del:hover svg { stroke: #FF4400; }
+
+  .section-lbl { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.6px; color: #555; margin: 22px 0 4px; display: flex; align-items: center; gap: 8px; }
+  .section-lbl::after { content: ''; flex: 1; height: 1px; background: #161616; }
+  .section-lbl:first-of-type { margin-top: 0; }
+
+  .group-card { background: #0C0C0C; border: 1px solid #161616; border-radius: 16px; padding: 14px 14px 8px; margin-bottom: 10px; position: relative; }
+  .group-hdr { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; cursor: pointer; }
+  .group-hdr-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .group-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .group-name { font-family: 'Doto', monospace; font-size: 12px; font-weight: 800; letter-spacing: 1.5px; color: #FFFFFF; text-transform: uppercase; }
+  .group-count { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #666; }
+  .group-tools { display: flex; gap: 4px; }
+  .group-tool { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 200ms ease; }
+  .group-tool svg { width: 11px; height: 11px; stroke: #555; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .group-tool:hover { background: #161616; }
+  .group-tool:hover svg { stroke: #FF4400; }
+  .group-tasks { padding-top: 4px; }
+  .group-empty { padding: 12px 4px; font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #3A3A3A; }
+  .group-add-task { display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; border-top: 1px dashed #1A1A1A; margin-top: 6px; cursor: pointer; font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #555; transition: color 200ms ease; }
+  .group-add-task:hover { color: #FF4400; }
+  .group-add-task .plus { font-size: 14px; font-weight: 400; }
+  .new-group-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border: 1px dashed #333; border-radius: 12px; cursor: pointer; margin-top: 6px; font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; color: #666; transition: all 250ms ease; }
+  .new-group-btn:hover { border-color: #FF4400; color: #FF4400; }
+  .new-group-btn .plus { font-size: 16px; font-weight: 400; line-height: 1; }
+
+  .top-add-btn { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border: 1px solid #FF4400; background: rgba(255,68,0,0.06); border-radius: 14px; cursor: pointer; margin: 18px 0 4px; font-family: 'Doto', monospace; font-size: 12px; font-weight: 800; letter-spacing: 1.6px; color: #FF4400; transition: all 250ms ease; }
+  .top-add-btn:hover { background: rgba(255,68,0,0.12); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,68,0,0.2); }
+  .top-add-btn .plus { font-size: 20px; font-weight: 400; line-height: 1; }
+  .top-add-btn .sub { color: #A06040; font-size: 9px; letter-spacing: 1.2px; margin-left: auto; }
+
+  .block-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #0F0F0F; position: relative; }
+  .block-row:last-child { border-bottom: none; }
+  .block-stripe { width: 3px; height: 30px; border-radius: 2px; flex-shrink: 0; }
+  .block-body { flex: 1; min-width: 0; }
+  .block-title { font-size: 12px; font-weight: 500; color: #E8E6E3; line-height: 1.3; margin-bottom: 3px; }
+  .block-time { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #666; }
+  .block-del { opacity: 0; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 200ms ease; flex-shrink: 0; }
+  .block-del svg { width: 12px; height: 12px; stroke: #666; stroke-width: 2; fill: none; }
+  .block-row:hover .block-del { opacity: 1; }
+  .block-del:hover { background: #1A1A1A; }
+  .block-del:hover svg { stroke: #FF4400; }
+  .block-current { box-shadow: inset 0 0 0 1px rgba(255,68,0,0.3); background: rgba(255,68,0,0.03); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 8px; }
+
+  .timeline-wrap { margin-top: 14px; padding-top: 12px; border-top: 1px solid #161616; }
+  .timeline-lbl { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; color: #555; margin-bottom: 10px; }
+  .timeline { position: relative; height: 34px; background: #0A0A0A; border: 1px solid #161616; border-radius: 10px; overflow: hidden; }
+  .timeline-block { position: absolute; top: 4px; bottom: 4px; border-radius: 5px; opacity: 0.9; display: flex; align-items: center; justify-content: center; font-family: 'Doto', monospace; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; color: #000; overflow: hidden; white-space: nowrap; }
+  .timeline-now { position: absolute; top: -4px; bottom: -4px; width: 1px; background: #FF4400; box-shadow: 0 0 6px rgba(255,68,0,0.9); z-index: 5; }
+  .timeline-now::before { content: ''; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: #FF4400; }
+  .timeline-hours { display: flex; justify-content: space-between; padding: 6px 2px 0; font-family: 'Doto', monospace; font-size: 8px; font-weight: 700; letter-spacing: 0.3px; color: #3A3A3A; }
+
+  .add-block-btn { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: 1px dashed #333; border-radius: 12px; cursor: pointer; margin-top: 12px; font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.4px; color: #666; transition: all 250ms ease; }
+  .add-block-btn:hover { border-color: #FF4400; color: #FF4400; }
+  .add-block-btn .plus { font-size: 16px; font-weight: 400; line-height: 1; }
+
+  .timer-display { text-align: center; padding: 30px 0 26px; position: relative; }
+  .timer-display-label { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #555; margin-bottom: 20px; }
+  .timer-big { font-family: 'Doto', monospace; font-size: 82px; font-weight: 800; letter-spacing: -4px; line-height: 0.9; color: #FFFFFF; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; }
+  .timer-big .colon { color: #FF4400; animation: colonBlink 1s step-end infinite; margin: 0 -2px; }
+  .timer-big .ms { font-size: 22px; color: #444; letter-spacing: -0.5px; font-weight: 600; margin-left: 6px; }
+
+  .pomo-lap-label { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #666; margin-top: 20px; }
+  .pomo-lap-label strong { color: #FF4400; }
+
+  .pomo-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+  .pomo-dot { width: 14px; height: 14px; border-radius: 50%; background: #161616; border: 1px solid #222; position: relative; }
+  .pomo-dot.done { background: #E8E6E3; border-color: #E8E6E3; }
+  .pomo-dot.current { background: transparent; border-color: #FF4400; box-shadow: 0 0 10px rgba(255,68,0,0.6); }
+  .pomo-dot.current::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: #FF4400; }
+
+  .btn { height: 54px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-family: 'Doto', monospace; font-size: 13px; font-weight: 700; letter-spacing: 1.4px; cursor: pointer; transition: all 400ms cubic-bezier(0.34, 1.4, 0.5, 1); }
+  .btn-primary { background: #FF4400; color: #FFFFFF; flex: 1; box-shadow: 0 0 30px rgba(255,68,0,0.4); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(255,68,0,0.6); }
+  .btn-primary:active { transform: translateY(0) scale(0.97); }
+  .btn-ghost { background: #0C0C0C; border: 1px solid #222; color: #888; flex: 0 0 54px; }
+  .btn-ghost:hover { border-color: #444; color: #E8E6E3; }
+
+  .timer-controls { display: flex; gap: 10px; margin-top: 34px; }
+  .mode-tabs { display: flex; gap: 4px; padding: 4px; background: #0C0C0C; border: 1px solid #161616; border-radius: 9999px; margin-bottom: 4px; }
+  .mode-tab { flex: 1; padding: 9px 0; text-align: center; font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #666; border-radius: 9999px; cursor: pointer; transition: all 300ms ease; }
+  .mode-tab.active { background: #FF4400; color: #FFFFFF; }
+
+  .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #161616; cursor: pointer; }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-lbl { font-size: 13px; color: #E8E6E3; font-weight: 500; }
+  .setting-val { font-family: 'Doto', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #666; display: flex; align-items: center; gap: 6px; }
+  .setting-val svg { width: 10px; height: 10px; stroke: #444; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+  .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; z-index: 200; }
+  .modal-backdrop.show { display: flex; animation: fadeIn 200ms ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { width: 100%; background: #0C0C0C; border-top: 1px solid #222; border-radius: 24px 24px 0 0; padding: 24px 20px 30px; animation: slideUp 300ms cubic-bezier(0.34, 1.3, 0.5, 1); max-height: 85vh; overflow-y: auto; scrollbar-width: none; }
+  .modal::-webkit-scrollbar { display: none; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-title { font-family: 'Doto', monospace; font-size: 14px; font-weight: 800; letter-spacing: 1.6px; color: #FFFFFF; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title .close-x { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; }
+  .modal-title .close-x:hover { background: #161616; }
+  .modal-title .close-x svg { width: 14px; height: 14px; stroke: #666; stroke-width: 2; fill: none; }
+  .modal-input, .modal-select { width: 100%; background: #161616; border: 1px solid #222; border-radius: 12px; padding: 14px 16px; color: #E8E6E3; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 10px; outline: none; transition: border-color 200ms ease; }
+  .modal-input:focus, .modal-select:focus { border-color: #FF4400; }
+  .modal-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .modal-row > * { flex: 1; margin-bottom: 0; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions .btn { flex: 1; font-size: 12px; }
+  .modal-cancel { background: #161616; color: #888; border: 1px solid #222; }
+  .modal-cancel:hover { color: #E8E6E3; }
+  .modal-lbl { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; color: #666; margin-bottom: 8px; margin-top: 18px; text-transform: uppercase; }
+  .modal-lbl:first-of-type { margin-top: 0; }
+
+  .chips-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 8px 12px; border-radius: 9999px; background: #161616; border: 1px solid #222; color: #888; font-family: 'Doto', monospace; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; cursor: pointer; transition: all 200ms ease; display: inline-flex; align-items: center; gap: 6px; }
+  .chip:hover { border-color: #444; color: #E8E6E3; }
+  .chip.active { background: rgba(255,68,0,0.12); border-color: #FF4400; color: #FF4400; }
+  .chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .days-row { display: flex; gap: 6px; justify-content: space-between; }
+  .day-btn { flex: 1; aspect-ratio: 1; border-radius: 50%; background: #161616; border: 1px solid #222; color: #666; font-family: 'Doto', monospace; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 200ms ease; }
+  .day-btn:hover { border-color: #444; color: #E8E6E3; }
+  .day-btn.active { background: #FF4400; border-color: #FF4400; color: #FFFFFF; box-shadow: 0 0 12px rgba(255,68,0,0.5); }
+
+  .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+  .toggle-lbl { font-family: 'Doto', monospace; font-size: 11px; font-weight: 800; letter-spacing: 1.4px; color: #E8E6E3; }
+  .toggle-sub { font-family: 'Doto', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #555; margin-top: 3px; }
+  .toggle { width: 44px; height: 26px; border-radius: 9999px; background: #222; position: relative; cursor: pointer; transition: background 250ms ease; flex-shrink: 0; }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #666; transition: all 250ms cubic-bezier(0.34, 1.4, 0.5, 1); }
+  .toggle.on { background: #FF4400; }
+  .toggle.on::after { left: calc(100% - 23px); background: #FFFFFF; }
+
+  .time-input-group { display: flex; gap: 10px; margin-top: 8px; }
+  .time-input-group > div { flex: 1; }
+  .time-mini-lbl { font-family: 'Doto', monospace; font-size: 8.5px; font-weight: 700; letter-spacing: 1.2px; color: #666; margin-bottom: 6px; }
+
+  .color-picker { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .color-swatch { width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 200ms ease; }
+  .color-swatch.active { border-color: #FFFFFF; transform: scale(1.1); }
+
+  .toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #161616; border: 1px solid #333; color: #E8E6E3; padding: 12px 20px; border-radius: 9999px; font-family: 'Doto', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; opacity: 0; transition: all 300ms cubic-bezier(0.34, 1.4, 0.5, 1); z-index: 300; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .theme-list { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .theme-option { padding: 10px 12px; border-radius: 12px; border: 1.5px solid transparent; cursor: pointer; background: #101010; display: flex; flex-direction: column; gap: 6px; min-width: 90px; transition: all 250ms ease; }
+  .theme-option.active { border-color: #FF4400; }
+  .theme-swatches { display: flex; gap: 3px; }
+  .theme-swatches > div { width: 14px; height: 14px; border-radius: 4px; }
+  .theme-name { font-family: 'Doto', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #999; }
+  .theme-option.active .theme-name { color: #FFFFFF; }
+
+  .divider-soft { height: 1px; background: #161616; margin: 16px 0 4px; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="screens">
+
+    <!-- DASHBOARD -->
+    <div class="screen active" id="s-dashboard">
+      <div class="hdr">
+        <div>
+          <div class="hdr-l">FLOW</div>
+          <div class="hdr-sub">PERSONAL · PRODUCTIVITY</div>
+        </div>
+        <div class="hdr-r">
+          <div class="hdr-status"></div>
+          <span class="time-live" id="dash-live-time">--:-- --</span>
+        </div>
+      </div>
+
+      <div class="greeting">
+        <div class="greeting-l1" id="greeting-time">GOOD AFTERNOON</div>
+        <div class="greeting-l2" id="greeting-main">Welcome back. <span class="dim">Let's begin.</span></div>
+      </div>
+
+      <div class="card">
+        <div class="idx"><span class="idx-num">01</span>TODAY</div>
+        <div style="height: 12px;"></div>
+        <div class="today-grid">
+          <div>
+            <div class="today-num" id="today-num">0<span class="u">H</span> 00<span class="u">M</span></div>
+            <div class="today-meta">
+              <strong id="today-pct">0%</strong>
+              <span class="today-goal" id="today-goal-lbl">GOAL 4H</span>
+              <span id="today-remaining">· 4H 00M LEFT</span>
+            </div>
+          </div>
+          <div class="arc-wrap">
+            <svg class="arc-svg" viewBox="0 0 92 92" id="todayArc"></svg>
+            <div class="arc-inner">
+              <div class="arc-pct" id="today-arc-pct">0%</div>
+              <div class="arc-lbl">GOAL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-row">
+        <div class="card">
+          <div class="idx"><span class="idx-num">02</span>SIGNAL</div>
+          <div style="height: 12px;"></div>
+          <div class="signal-wrap">
+            <div class="signal-arc">
+              <svg viewBox="0 0 96 96" style="position:absolute;inset:0;transform:rotate(-90deg);" id="signalArc"></svg>
+              <div class="signal-num">
+                <div class="signal-big" id="signal-big">0</div>
+                <div class="signal-sub">DAYS</div>
+              </div>
+            </div>
+            <div class="signal-foot" id="signal-foot">READY</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="idx"><span class="idx-num">03</span>TASKS</div>
+          <div style="height: 12px;"></div>
+          <div class="tasks-wrap">
+            <div class="tasks-num"><span id="tasks-done">0</span><span class="slash">/</span><span class="den" id="tasks-total">0</span></div>
+            <div class="tasks-bars" id="tasks-bars"></div>
+            <div class="tasks-foot" id="tasks-foot">0% DONE</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="idx"><span class="idx-num">04</span>HOURS</div>
+        <div style="height: 12px;"></div>
+        <div class="hour-bar" id="hour-bar"></div>
+        <div class="hour-labels">
+          <span>0:30</span><span>1:00</span><span>1:30</span><span>2:00</span>
+          <span>2:30</span><span>3:00</span><span>3:30</span><span>4:00</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="idx"><span class="idx-num">05</span>THIS WEEK</div>
+        <div style="height: 12px;"></div>
+        <div class="chart-wrap">
+          <svg class="chart-svg" viewBox="0 0 320 108" preserveAspectRatio="none" id="weekChart"></svg>
+        </div>
+        <div class="day-labels">
+          <span>M</span><span>T</span><span>W</span><span>T</span><span class="today">F</span><span>S</span><span>S</span>
+        </div>
+        <div class="chart-foot">
+          <div class="chart-stat">AVG<strong id="week-avg">0H 00M</strong></div>
+          <div class="chart-stat up">▲ <strong id="week-delta">0H</strong></div>
+        </div>
+      </div>
+
+      <div class="session">
+        <div class="session-hdr">
+          <div class="session-tag">
+            <span class="idx-num">06</span>
+            <span>STOPWATCH</span>
+          </div>
+          <div class="session-status">
+            <div class="status-dot" id="dash-status-dot"></div>
+            <span id="dash-status-txt">READY</span>
+          </div>
+        </div>
+        <div class="session-time" id="dash-session-time">00<span class="colon">:</span>00<span class="ms">.00</span></div>
+        <div class="waveform" id="waveform"></div>
+        <div class="session-foot">
+          <div class="session-sub">
+            <strong>COUNTING UP</strong><br>
+            <span id="dash-next">TAP PLAY TO START</span>
+          </div>
+          <div class="play" id="dash-play">
+            <svg viewBox="0 0 24 24" fill="#FFFFFF" id="dash-play-icon"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMER -->
+    <div class="screen" id="s-timer">
+      <div class="hdr">
+        <div>
+          <div class="hdr-l">POMODORO</div>
+          <div class="hdr-sub">LAP <span id="timer-idx-lbl">01 / 04</span></div>
+        </div>
+        <div class="hdr-r">
+          <div class="hdr-status"></div>
+          <span id="timer-status-txt">ARMED</span>
+        </div>
+      </div>
+
+      <div class="mode-tabs" style="margin-top: 20px;">
+        <div class="mode-tab active" data-mode="work">FOCUS</div>
+        <div class="mode-tab" data-mode="short">SHORT</div>
+        <div class="mode-tab" data-mode="long">LONG</div>
+      </div>
+
+      <div class="timer-display">
+        <div class="timer-display-label" id="timer-label">FOCUS · LAP 01</div>
+        <div class="timer-big" id="timer-big">40<span class="colon">:</span>00<span class="ms">.00</span></div>
+        <div class="pomo-lap-label">LAPS COMPLETED <strong id="pomo-laps-completed">0</strong></div>
+        <div class="pomo-dots" id="pomo-dots"></div>
+      </div>
+
+      <div class="timer-controls">
+        <div class="btn btn-ghost" id="btn-reset">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>
+          </svg>
+        </div>
+        <div class="btn btn-primary" id="btn-start">START FOCUS</div>
+      </div>
+
+      <div class="section-lbl" id="timer-task-lbl" style="margin-top: 34px;">TASK FOR THIS SESSION</div>
+      <div id="timer-task-slot"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="screen" id="s-tasks">
+      <div class="hdr">
+        <div>
+          <div class="hdr-l">TASKS</div>
+          <div class="hdr-sub" id="tasks-hdr-sub">0 / 0 · 0% DONE</div>
+        </div>
+        <div class="hdr-r">
+          <span id="tasks-date">THU 25 SEP</span>
+        </div>
+      </div>
+
+      <div class="top-add-btn" id="top-add-task-btn">
+        <span class="plus">+</span>
+        <span>ADD TASK</span>
+        <span class="sub">GROUP · REPEAT · BLOCK</span>
+      </div>
+
+      <div class="section-lbl" style="margin-top: 20px;">GROUPS</div>
+      <div id="groups-list"></div>
+      <div class="new-group-btn" id="new-group-btn">
+        <span class="plus">+</span>
+        <span>NEW GROUP</span>
+      </div>
+
+      <div class="section-lbl" style="margin-top: 28px;">TIMEBLOCKS · TODAY</div>
+      <div class="card" style="padding: 12px 14px 12px;">
+        <div id="blocks-list"></div>
+        <div class="timeline-wrap">
+          <div class="timeline-lbl">TODAY · 6 AM – 10 PM</div>
+          <div class="timeline" id="timeline">
+            <div class="timeline-now" id="timeline-now"></div>
+          </div>
+          <div class="timeline-hours">
+            <span>6A</span><span>8A</span><span>10A</span><span>12P</span><span>2P</span><span>4P</span><span>6P</span><span>8P</span><span>10P</span>
+          </div>
+        </div>
+      </div>
+      <div class="add-block-btn" id="add-block-btn">
+        <span class="plus">+</span>
+        <span>ADD TIMEBLOCK</span>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="screen" id="s-analytics">
+      <div class="hdr">
+        <div>
+          <div class="hdr-l">ANALYTICS</div>
+          <div class="hdr-sub" id="analytics-sub">WK 39 · 2026</div>
+        </div>
+        <div class="hdr-r">
+          <div class="hdr-status"></div>
+          <span>LIVE</span>
+        </div>
+      </div>
+
+      <div class="range-tabs" style="margin-top: 20px;">
+        <div class="range-tab" data-range="day">DAY</div>
+        <div class="range-tab active" data-range="week">WEEK</div>
+        <div class="range-tab" data-range="month">MONTH</div>
+        <div class="range-tab" data-range="all">ALL</div>
+      </div>
+
+      <div class="card">
+        <div class="idx"><span class="idx-num">01</span>COMPARE</div>
+        <div style="height: 12px;"></div>
+        <div class="compare-wrap">
+          <div class="compare-legend">
+            <div class="legend-item"><div class="legend-dot orange"></div>THIS PERIOD</div>
+            <div class="legend-item"><div class="legend-dot gray"></div>PREVIOUS</div>
+          </div>
+          <svg class="chart-svg" viewBox="0 0 320 108" preserveAspectRatio="none" id="compareChart" style="height: 116px;"></svg>
+        </div>
+        <div class="day-labels" id="compare-labels"></div>
+        <div class="chart-foot">
+          <div class="chart-stat">TOTAL<strong id="compare-total">0H 00M</strong></div>
+          <div class="chart-stat up">▲ <strong id="compare-delta">0H</strong></div>
+        </div>
+      </div>
+
+      <div class="metric-grid" id="metric-grid"></div>
+
+      <div class="card">
+        <div class="idx"><span class="idx-num">02</span>PEAK HOURS</div>
+        <div style="height: 12px;"></div>
+        <svg class="chart-svg" viewBox="0 0 320 80" preserveAspectRatio="none" id="hoursChart" style="height: 84px;"></svg>
+        <div class="day-labels" style="padding-top: 6px;">
+          <span>6A</span><span>9A</span><span>12P</span><span>3P</span><span class="today">6P</span><span>9P</span>
+        </div>
+        <div class="chart-foot">
+          <div class="chart-stat">PEAK<strong id="peak-lbl">—</strong></div>
+          <div class="chart-stat">BEST DAY<strong id="bestday-lbl">—</strong></div>
+        </div>
+      </div>
+
+      <div class="section-lbl">PERSONAL RECORDS</div>
+      <div class="card">
+        <div class="setting-row"><div class="setting-lbl">Longest streak</div><div class="setting-val" id="rec-streak">0D</div></div>
+        <div class="setting-row"><div class="setting-lbl">Most in a day</div><div class="setting-val" id="rec-day">0H 00M</div></div>
+        <div class="setting-row"><div class="setting-lbl">Best week</div><div class="setting-val" id="rec-week">0H 00M</div></div>
+        <div class="setting-row"><div class="setting-lbl">Total sessions</div><div class="setting-val" id="rec-sessions">0</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="screen" id="s-settings">
+      <div class="hdr">
+        <div>
+          <div class="hdr-l">SETTINGS</div>
+          <div class="hdr-sub">v0.3.0</div>
+        </div>
+        <div class="hdr-r"><span>FLOW</span></div>
+      </div>
+
+      <div class="section-lbl" style="margin-top: 20px;">YOU</div>
+      <div class="card">
+        <div class="setting-row" data-set="userName">
+          <div class="setting-lbl">Your name</div>
+          <div class="setting-val"><span id="sv-name">— NOT SET</span>
+            <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">APPEARANCE</div>
+      <div class="card">
+        <div class="setting-lbl" style="margin-bottom: 4px;">Theme</div>
+        <div class="theme-list" id="theme-list">
+          <div class="theme-option" data-theme="deerflow">
+            <div class="theme-swatches"><div style="background:#0C0C0C"></div><div style="background:#FF4400"></div><div style="background:#FFFFFF"></div></div>
+            <div class="theme-name">DEERFLOW</div>
+          </div>
+          <div class="theme-option" data-theme="paper">
+            <div class="theme-swatches"><div style="background:#F1EEE7"></div><div style="background:#16161A"></div><div style="background:#E85D2C"></div></div>
+            <div class="theme-name">PAPER</div>
+          </div>
+          <div class="theme-option" data-theme="pantheon">
+            <div class="theme-swatches"><div style="background:#F0F3F7"></div><div style="background:#3B7DB8"></div><div style="background:#1A2332"></div></div>
+            <div class="theme-name">PANTHEON</div>
+          </div>
+          <div class="theme-option" data-theme="void">
+            <div class="theme-swatches"><div style="background:#000000"></div><div style="background:#FFFFFF"></div><div style="background:#666666"></div></div>
+            <div class="theme-name">VOID</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">POMODORO</div>
+      <div class="card">
+        <div class="setting-row" data-set="workMinutes">
+          <div class="setting-lbl">Work duration</div>
+          <div class="setting-val"><span id="sv-work">40 MIN</span>
+            <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="setting-row"><div class="setting-lbl">Short break</div><div class="setting-val"><span>5 MIN · LOCKED</span></div></div>
+        <div class="setting-row"><div class="setting-lbl">Long break</div><div class="setting-val"><span>15 MIN · LOCKED</span></div></div>
+        <div class="setting-row" data-set="longBreakAfter">
+          <div class="setting-lbl">Long break after</div>
+          <div class="setting-val"><span id="sv-long">4 POMOS</span>
+            <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">GOAL</div>
+      <div class="card">
+        <div class="setting-row" data-set="dailyGoalMinutes">
+          <div class="setting-lbl">Daily minutes</div>
+          <div class="setting-val"><span id="sv-goal">240 MIN</span>
+            <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">DATA</div>
+      <div class="card">
+        <div class="setting-row" id="export-btn"><div class="setting-lbl">Export backup</div><div class="setting-val"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+        <div class="setting-row" id="import-btn"><div class="setting-lbl">Import backup</div><div class="setting-val"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+        <div class="setting-row" id="reset-btn"><div class="setting-lbl" style="color:#FF4400">Reset all data</div><div class="setting-val"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nav-wrap">
+    <div class="nav">
+      <div class="nav-item active" data-target="s-dashboard"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2z"/></svg></div>
+      <div class="nav-item" data-target="s-timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div class="nav-item" data-target="s-tasks"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+      <div class="nav-item" data-target="s-analytics"><svg viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></div>
+      <div class="nav-item" data-target="s-settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" id="modal-content"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const DB = {
+  get(k, d) { try { const v = localStorage.getItem('flow_' + k); return v ? JSON.parse(v) : d; } catch(e) { return d; } },
+  set(k, v) { localStorage.setItem('flow_' + k, JSON.stringify(v)); },
+  del(k) { localStorage.removeItem('flow_' + k); }
+};
+
+const defaultSettings = {
+  userName: '',
+  workMinutes: 40,
+  shortBreakMinutes: 5,
+  longBreakMinutes: 15,
+  longBreakAfter: 4,
+  dailyGoalMinutes: 240,
+  theme: 'deerflow'
+};
+
+const GROUP_COLORS = ['#FF4400', '#E8E6E3', '#7A8A6C', '#5C7AA8', '#B85C7A', '#A88C5C'];
+const BLOCK_COLORS = ['#FF4400', '#5C7AA8', '#7A8A6C', '#B85C7A', '#A88C5C', '#E8E6E3'];
+
+const storedSettings = DB.get('settings', null);
+if (storedSettings && storedSettings.workMinutes === 25) {
+  storedSettings.workMinutes = 40;
+  DB.set('settings', storedSettings);
+}
+
+let state = {
+  settings: { ...defaultSettings, ...DB.get('settings', {}) },
+  groups: DB.get('groups', []),
+  tasks: DB.get('tasks', []),
+  blocks: DB.get('blocks', []),
+  sessions: DB.get('sessions', []),
+  sw: { running: false, elapsedMs: 0, startedAt: null, pausedAt: null },
+  pomo: { mode: 'work', running: false, remaining: 0, total: 0, lapIndex: 0, lapsCompleted: 0, startedAt: null, pausedAt: null, currentTaskId: null },
+  analyticsRange: 'week'
+};
+
+function save() {
+  DB.set('settings', state.settings);
+  DB.set('groups', state.groups);
+  DB.set('tasks', state.tasks);
+  DB.set('blocks', state.blocks);
+  DB.set('sessions', state.sessions);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function dayKey(ts) { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayKey() { return dayKey(Date.now()); }
+function startOfDay(ts) { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+
+// Format minutes-since-midnight as 12-hour time (e.g. "9:30 AM")
+function fmtTime12(mins) {
+  let h = Math.floor(mins / 60);
+  const m = mins % 60;
+  const ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return h + ':' + pad(m) + ' ' + ap;
+}
+
+// Parse a flexible time string into minutes-since-midnight
+function parseTime(str) {
+  if (!str) return null;
+  const s = String(str).trim().toUpperCase();
+  const m = s.match(/^(\d{1,2}):?(\d{2})?\s*(AM|PM)?$/);
+  if (!m) return null;
+  let h = parseInt(m[1]);
+  const min = parseInt(m[2] || '0');
+  const ap = m[3];
+  if (ap === 'PM' && h < 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  if (h > 23 || h < 0 || min > 59 || min < 0) return null;
+  return h * 60 + min;
+}
+
+// Format a JS Date to "9:30 AM"
+function fmtClock(date) {
+  let h = date.getHours();
+  const m = date.getMinutes();
+  const ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return h + ':' + pad(m) + ' ' + ap;
+}
+
+function todayDOW() {
+  const j = new Date().getDay();
+  return (j + 6) % 7;
+}
+
+function resetRepeatingTasks() {
+  const today = todayKey();
+  let changed = false;
+  state.tasks.forEach(t => {
+    if (!t.repeat || t.repeat.type === 'none') return;
+    if (!t.done) return;
+    if (t.lastCompletedDate === today) return;
+    t.done = false;
+    changed = true;
+  });
+  if (changed) save();
+}
+
+function isTaskDueToday(task) {
+  if (!task.repeat || task.repeat.type === 'none') return true;
+  if (task.repeat.type === 'daily') return true;
+  if (task.repeat.type === 'days') {
+    return Array.isArray(task.repeat.days) && task.repeat.days.includes(todayDOW());
+  }
+  return true;
+}
+
+function repeatLabel(task) {
+  if (!task.repeat || task.repeat.type === 'none') return null;
+  if (task.repeat.type === 'daily') return '↻ DAILY';
+  if (task.repeat.type === 'days') {
+    const letters = ['M','T','W','T','F','S','S'];
+    const days = (task.repeat.days || []).slice().sort((a,b)=>a-b).map(d => letters[d]).join('');
+    if (task.repeat.days.length === 7) return '↻ DAILY';
+    return '↻ ' + days;
+  }
+  return null;
+}
+
+function getTodayMinutes() {
+  const tk = todayKey();
+  return state.sessions.filter(s => s.type === 'work' && dayKey(s.ts) === tk).reduce((sum, s) => sum + s.minutes, 0);
+}
+
+function getLiveTodayMinutes() {
+  let base = getTodayMinutes();
+  if (state.sw.running && state.sw.startedAt) {
+    base += (state.sw.elapsedMs + (Date.now() - state.sw.startedAt)) / 60000;
+  } else if (state.sw.elapsedMs > 0) {
+    base += state.sw.elapsedMs / 60000;
+  }
+  if (state.pomo.running && state.pomo.mode === 'work') {
+    const elapsed = state.pomo.total - state.pomo.remaining;
+    if (elapsed > 0) base += elapsed / 60;
+  }
+  return base;
+}
+
+function getMinutesOnDay(dayTs) {
+  const dk = dayKey(dayTs);
+  return state.sessions.filter(s => s.type === 'work' && dayKey(s.ts) === dk).reduce((sum, s) => sum + s.minutes, 0);
+}
+
+function fmtMin(mins) { const h = Math.floor(mins/60); const m = Math.floor(mins%60); return `${h}H ${pad(m)}M`; }
+function fmtMinShort(mins) { const h = Math.floor(mins/60); const m = Math.floor(mins%60); if (h === 0) return `${m}M`; if (m === 0) return `${h}H`; return `${h}H ${m}M`; }
+
+function computeStreak() {
+  const days = new Set(state.sessions.filter(s => s.type === 'work').map(s => dayKey(s.ts)));
+  if (days.size === 0) return 0;
+  let streak = 0;
+  let cursor = new Date(); cursor.setHours(0,0,0,0);
+  if (!days.has(dayKey(cursor.getTime()))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!days.has(dayKey(cursor.getTime()))) return 0;
+  }
+  while (days.has(dayKey(cursor.getTime()))) { streak++; cursor.setDate(cursor.getDate() - 1); }
+  return streak;
+}
+
+function buildArc(svg, percent, dotsCount, radius, cx, cy) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const NS = 'http://www.w3.org/2000/svg';
+  const activeDots = Math.round(dotsCount * Math.min(percent, 100) / 100);
+  for (let i = 0; i < dotsCount; i++) {
+    const angle = (i / dotsCount) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + radius * Math.cos(angle);
+    const y = cy + radius * Math.sin(angle);
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 2);
+    c.setAttribute('fill', i < activeDots ? '#FF4400' : '#2A2A2A');
+    svg.appendChild(c);
+  }
+}
+
+function buildLineChart(svg, data, opts = {}) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const NS = 'http://www.w3.org/2000/svg';
+  const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+  const width = vb[2], height = vb[3];
+  const p = { l: 8, r: 8, t: 12, b: 12 };
+  const maxV = opts.max || Math.max(...data, 1) * 1.15;
+  const stepX = data.length > 1 ? (width - p.l - p.r) / (data.length - 1) : 0;
+  const points = data.map((v, i) => ({ x: p.l + i * stepX, y: height - p.b - (v / maxV) * (height - p.t - p.b) }));
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', points.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ' ' + pt.y).join(' '));
+  path.setAttribute('stroke', '#FF4400');
+  path.setAttribute('stroke-width', '2.5');
+  path.setAttribute('stroke-dasharray', '0.1 7');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('fill', 'none');
+  svg.appendChild(path);
+  points.forEach((pt, i) => {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+    c.setAttribute('r', i === opts.highlight ? 4.5 : 3);
+    c.setAttribute('fill', '#FF4400');
+    svg.appendChild(c);
+  });
+}
+
+function buildCompareChart(svg, thisData, lastData, opts = {}) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const NS = 'http://www.w3.org/2000/svg';
+  const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+  const width = vb[2], height = vb[3];
+  const p = { l: 8, r: 8, t: 12, b: 12 };
+  const maxV = opts.max || Math.max(...thisData, ...lastData, 1) * 1.15;
+  const stepX = thisData.length > 1 ? (width - p.l - p.r) / (thisData.length - 1) : 0;
+  const toPoints = (data) => data.map((v, i) => ({ x: p.l + i * stepX, y: height - p.b - (v / maxV) * (height - p.t - p.b) }));
+  const pLast = toPoints(lastData);
+  const pl = document.createElementNS(NS, 'path');
+  pl.setAttribute('d', pLast.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ' ' + pt.y).join(' '));
+  pl.setAttribute('stroke', '#333'); pl.setAttribute('stroke-width', '2');
+  pl.setAttribute('stroke-dasharray', '0.1 6'); pl.setAttribute('stroke-linecap', 'round');
+  pl.setAttribute('fill', 'none');
+  svg.appendChild(pl);
+  pLast.forEach(pt => {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+    c.setAttribute('r', 2.5); c.setAttribute('fill', '#333');
+    svg.appendChild(c);
+  });
+  const pThis = toPoints(thisData);
+  const pt2 = document.createElementNS(NS, 'path');
+  pt2.setAttribute('d', pThis.map((pt, i) => (i === 0 ? 'M' : 'L') + pt.x + ' ' + pt.y).join(' '));
+  pt2.setAttribute('stroke', '#FF4400'); pt2.setAttribute('stroke-width', '2.5');
+  pt2.setAttribute('stroke-dasharray', '0.1 7'); pt2.setAttribute('stroke-linecap', 'round');
+  pt2.setAttribute('fill', 'none');
+  svg.appendChild(pt2);
+  pThis.forEach(pt => {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+    c.setAttribute('r', 3); c.setAttribute('fill', '#FF4400');
+    svg.appendChild(c);
+  });
+}
+
+// ============ STOPWATCH ============
+function swStart() {
+  if (state.sw.running) return;
+  state.sw.running = true;
+  state.sw.startedAt = Date.now();
+  state.sw.pausedAt = null;
+  swTick();
+  renderDashboardSession();
+}
+function swPause() {
+  if (!state.sw.running) return;
+  state.sw.elapsedMs += Date.now() - state.sw.startedAt;
+  state.sw.startedAt = null;
+  state.sw.running = false;
+  state.sw.pausedAt = Date.now();
+  renderDashboardSession();
+}
+function swReset() {
+  const ms = getSwLiveMs();
+  if (ms >= 30000) {
+    const minutes = Math.round(ms / 60000);
+    if (minutes >= 1) {
+      state.sessions.push({ id: 'sw_' + Date.now(), taskId: null, minutes, type: 'work', ts: Date.now(), source: 'stopwatch' });
+      save();
+      toast('Logged · ' + fmtMinShort(minutes));
+    }
+  }
+  state.sw = { running: false, elapsedMs: 0, startedAt: null, pausedAt: null };
+  renderAll();
+}
+function getSwLiveMs() {
+  let total = state.sw.elapsedMs;
+  if (state.sw.running && state.sw.startedAt) total += (Date.now() - state.sw.startedAt);
+  return total;
+}
+function formatStopwatch(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const hundredths = Math.floor((ms % 1000) / 10);
+  if (h > 0) return `${pad(h)}<span class="colon">:</span>${pad(m)}<span class="colon">:</span>${pad(s)}<span class="ms">.${pad(hundredths)}</span>`;
+  return `${pad(m)}<span class="colon">:</span>${pad(s)}<span class="ms">.${pad(hundredths)}</span>`;
+}
+
+let swTimer = null;
+function swTick() {
+  if (swTimer) clearInterval(swTimer);
+  swTimer = setInterval(() => {
+    if (!state.sw.running) { clearInterval(swTimer); swTimer = null; return; }
+    renderDashboardSession();
+    renderLiveDashboard();
+  }, 80);
+}
+
+// ============ POMODORO ============
+function getPomoDuration(mode) {
+  const s = state.settings;
+  if (mode === 'work') return s.workMinutes * 60;
+  if (mode === 'short') return s.shortBreakMinutes * 60;
+  if (mode === 'long') return s.longBreakMinutes * 60;
+  return 0;
+}
+function pomoInit() {
+  state.pomo.total = getPomoDuration(state.pomo.mode);
+  state.pomo.remaining = state.pomo.total;
+}
+function pomoStart() {
+  if (state.pomo.running) return;
+  state.pomo.running = true;
+  const elapsed = state.pomo.total - state.pomo.remaining;
+  state.pomo.startedAt = Date.now() - elapsed * 1000;
+  state.pomo.pausedAt = null;
+  pomoTick();
+  renderTimer();
+}
+function pomoPause() {
+  if (!state.pomo.running) return;
+  const now = Date.now();
+  state.pomo.remaining = Math.max(0, state.pomo.total - (now - state.pomo.startedAt) / 1000);
+  state.pomo.pausedAt = now;
+  state.pomo.running = false;
+  renderTimer();
+}
+function pomoReset() {
+  state.pomo.running = false;
+  state.pomo.startedAt = null;
+  state.pomo.pausedAt = null;
+  state.pomo.remaining = state.pomo.total;
+  renderTimer();
+}
+function pomoSwitchMode(mode) {
+  if (state.pomo.running) return;
+  state.pomo.mode = mode;
+  state.pomo.total = getPomoDuration(mode);
+  state.pomo.remaining = state.pomo.total;
+  state.pomo.pausedAt = null;
+  renderTimer();
+}
+function pomoComplete() {
+  const wasWork = state.pomo.mode === 'work';
+  const minutes = Math.round(state.pomo.total / 60);
+  if (wasWork) {
+    state.sessions.push({ id: 'p_' + Date.now(), taskId: state.pomo.currentTaskId, minutes, type: 'work', ts: Date.now(), source: 'pomodoro' });
+    if (state.pomo.currentTaskId) {
+      const t = state.tasks.find(x => x.id === state.pomo.currentTaskId);
+      if (t) {
+        t.done = true;
+        t.lastCompletedDate = todayKey();
+      }
+    }
+    state.pomo.lapsCompleted++;
+    state.pomo.lapIndex++;
+    save();
+    toast('Lap ' + state.pomo.lapsCompleted + ' done · ' + fmtMinShort(minutes));
+  } else {
+    toast('Break over');
+  }
+  let nextMode;
+  if (wasWork) {
+    if (state.pomo.lapIndex >= state.settings.longBreakAfter) {
+      nextMode = 'long';
+      state.pomo.lapIndex = 0;
+    } else { nextMode = 'short'; }
+  } else { nextMode = 'work'; }
+  state.pomo.mode = nextMode;
+  state.pomo.total = getPomoDuration(nextMode);
+  state.pomo.remaining = state.pomo.total;
+  state.pomo.running = false;
+  state.pomo.startedAt = null;
+  renderAll();
+}
+
+let pomoTimer = null;
+function pomoTick() {
+  if (pomoTimer) clearInterval(pomoTimer);
+  pomoTimer = setInterval(() => {
+    if (!state.pomo.running) { clearInterval(pomoTimer); pomoTimer = null; return; }
+    const elapsed = (Date.now() - state.pomo.startedAt) / 1000;
+    const remaining = state.pomo.total - elapsed;
+    if (remaining <= 0) {
+      state.pomo.remaining = 0;
+      renderTimerDisplay();
+      clearInterval(pomoTimer); pomoTimer = null;
+      pomoComplete();
+      return;
+    }
+    state.pomo.remaining = remaining;
+    renderTimerDisplay();
+    if (state.pomo.mode === 'work') renderLiveDashboard();
+  }, 80);
+}
+
+function formatCountdown(seconds) {
+  const totalSec = Math.max(0, seconds);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.floor(totalSec % 60);
+  const hundredths = Math.floor((totalSec % 1) * 100);
+  if (h > 0) return `${pad(h)}<span class="colon">:</span>${pad(m)}<span class="colon">:</span>${pad(s)}<span class="ms">.${pad(hundredths)}</span>`;
+  return `${pad(m)}<span class="colon">:</span>${pad(s)}<span class="ms">.${pad(hundredths)}</span>`;
+}
+
+// ============ RENDER: DASHBOARD ============
+function getGreetingPeriod() {
+  const h = new Date().getHours();
+  if (h < 5) return 'LATE NIGHT';
+  if (h < 12) return 'GOOD MORNING';
+  if (h < 18) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+}
+
+function renderDashboard() {
+  const today = getLiveTodayMinutes();
+  const goal = state.settings.dailyGoalMinutes;
+  const pct = goal > 0 ? Math.min(100, Math.round((today / goal) * 100)) : 0;
+  const remaining = Math.max(0, goal - today);
+
+  document.getElementById('dash-live-time').textContent = fmtClock(new Date());
+
+  document.getElementById('today-num').innerHTML = `${Math.floor(today/60)}<span class="u">H</span> ${pad(Math.floor(today%60))}<span class="u">M</span>`;
+  document.getElementById('today-pct').textContent = pct + '%';
+  document.getElementById('today-goal-lbl').textContent = 'GOAL ' + fmtMinShort(goal);
+  document.getElementById('today-remaining').textContent = '· ' + fmtMinShort(remaining) + ' LEFT';
+  document.getElementById('today-arc-pct').textContent = pct + '%';
+  buildArc(document.getElementById('todayArc'), pct, 32, 40, 46, 46);
+
+  const period = getGreetingPeriod();
+  const name = state.settings.userName;
+  document.getElementById('greeting-time').textContent = period + (name ? ', ' + name.toUpperCase() : '');
+
+  const streak = computeStreak();
+  const greetMain = document.getElementById('greeting-main');
+  if (streak > 0) {
+    greetMain.innerHTML = `${streak} day${streak !== 1 ? 's' : ''} strong. <span class="dim">Keep it going.</span>`;
+  } else if (today > 0) {
+    greetMain.innerHTML = `Started today. <span class="dim">Keep the flow.</span>`;
+  } else {
+    greetMain.innerHTML = (name ? `Welcome back, ${name}. ` : `Welcome. `) + `<span class="dim">Let's begin.</span>`;
+  }
+
+  document.getElementById('signal-big').textContent = streak;
+  document.getElementById('signal-foot').textContent = streak > 0 ? '▲ ACTIVE' : 'READY';
+  buildArc(document.getElementById('signalArc'), Math.min(100, (streak/30)*100), 30, 42, 48, 48);
+
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  document.getElementById('tasks-done').textContent = done;
+  document.getElementById('tasks-total').textContent = total;
+  const barsEl = document.getElementById('tasks-bars');
+  barsEl.innerHTML = '';
+  const shown = Math.min(total, 5);
+  for (let i = 0; i < 5; i++) {
+    const b = document.createElement('div');
+    b.className = 'tasks-bar';
+    if (i < shown) b.classList.add(i < done ? 'on' : 'mid');
+    barsEl.appendChild(b);
+  }
+  document.getElementById('tasks-foot').textContent = total > 0 ? Math.round((done/total)*100) + '% DONE' : '— DONE';
+
+  renderHourBar(today, goal);
+
+  const weekData = [], prevWeekData = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+    weekData.push(getMinutesOnDay(d.getTime()));
+    const d2 = new Date(d); d2.setDate(d2.getDate() - 7);
+    prevWeekData.push(getMinutesOnDay(d2.getTime()));
+  }
+  weekData[6] = Math.max(weekData[6], Math.floor(today));
+  buildLineChart(document.getElementById('weekChart'), weekData, { max: Math.max(goal, ...weekData)*1.2, highlight: 6 });
+  const weekTotal = weekData.reduce((a,b)=>a+b,0);
+  const prevWeekTotal = prevWeekData.reduce((a,b)=>a+b,0);
+  document.getElementById('week-avg').textContent = fmtMin(Math.round(weekTotal/7));
+  const delta = weekTotal - prevWeekTotal;
+  document.getElementById('week-delta').textContent = (delta>=0?'+':'') + fmtMinShort(Math.abs(delta));
+
+  renderDashboardSession();
+}
+
+function renderHourBar(today, goal) {
+  const barEl = document.getElementById('hour-bar');
+  barEl.innerHTML = '';
+  const segMin = 30;
+  const nowSegIdx = Math.floor(today / segMin);
+  for (let i = 0; i < 8; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'hour-seg';
+    const covered = today - (i * segMin);
+    if (covered >= segMin) seg.classList.add('s-full');
+    else if (covered > 0) seg.classList.add('s-half');
+    else seg.classList.add('empty');
+    const fill = document.createElement('div');
+    fill.className = 'fill';
+    if (covered > 0 && covered < segMin) fill.style.transform = `scaleY(${covered/segMin})`;
+    seg.appendChild(fill);
+    barEl.appendChild(seg);
+  }
+  const nm = document.createElement('div');
+  nm.className = 'now-marker';
+  nm.style.left = `calc(${Math.min(100, (today / goal) * 100)}% - 1px)`;
+  barEl.appendChild(nm);
+  const labels = document.querySelectorAll('#s-dashboard .hour-labels span');
+  labels.forEach((l, i) => {
+    l.classList.remove('on','active');
+    if ((i+1) * segMin <= today) l.classList.add('on');
+    if (i === nowSegIdx && today > 0) l.classList.add('active');
+  });
+}
+
+function renderDashboardSession() {
+  document.getElementById('dash-session-time').innerHTML = formatStopwatch(getSwLiveMs());
+  const statusEl = document.getElementById('dash-status-txt');
+  if (state.sw.running) statusEl.textContent = 'RUNNING';
+  else if (state.sw.elapsedMs > 0) statusEl.textContent = 'PAUSED';
+  else statusEl.textContent = 'READY';
+
+  if (state.sw.running && state.sw.startedAt) {
+    document.getElementById('dash-next').textContent = 'STARTED ' + fmtClock(new Date(state.sw.startedAt));
+  } else if (state.sw.pausedAt) {
+    document.getElementById('dash-next').textContent = 'PAUSED AT ' + fmtClock(new Date(state.sw.pausedAt));
+  } else {
+    document.getElementById('dash-next').textContent = 'TAP PLAY TO START';
+  }
+
+  document.getElementById('dash-play-icon').innerHTML = state.sw.running
+    ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+}
+
+function renderLiveDashboard() {
+  const today = getLiveTodayMinutes();
+  const goal = state.settings.dailyGoalMinutes;
+  const pct = goal > 0 ? Math.min(100, Math.round((today / goal) * 100)) : 0;
+  const remaining = Math.max(0, goal - today);
+  document.getElementById('today-num').innerHTML = `${Math.floor(today/60)}<span class="u">H</span> ${pad(Math.floor(today%60))}<span class="u">M</span>`;
+  document.getElementById('today-pct').textContent = pct + '%';
+  document.getElementById('today-remaining').textContent = '· ' + fmtMinShort(remaining) + ' LEFT';
+  renderDashboardSession();
+}
+
+// ============ RENDER: TIMER ============
+function renderTimer() {
+  const p = state.pomo;
+  document.getElementById('timer-big').innerHTML = formatCountdown(p.remaining);
+  const mode = p.mode;
+  const modeLbl = mode === 'work' ? 'FOCUS' : (mode === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+  const lapNum = (p.lapIndex % state.settings.longBreakAfter) + 1;
+  document.getElementById('timer-label').textContent = `${modeLbl} · LAP ${pad(lapNum)} OF ${pad(state.settings.longBreakAfter)}`;
+  document.getElementById('timer-idx-lbl').textContent = pad(lapNum) + ' / ' + pad(state.settings.longBreakAfter);
+  document.getElementById('timer-status-txt').textContent = p.running ? 'RUNNING' : (p.pausedAt ? 'PAUSED' : 'ARMED');
+  document.getElementById('pomo-laps-completed').textContent = p.lapsCompleted;
+  document.querySelectorAll('#s-timer .mode-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+  const startBtn = document.getElementById('btn-start');
+  if (p.running) startBtn.textContent = 'PAUSE';
+  else if (p.pausedAt) startBtn.textContent = 'RESUME';
+  else startBtn.textContent = mode === 'work' ? 'START FOCUS' : 'START BREAK';
+
+  const dots = document.getElementById('pomo-dots');
+  dots.innerHTML = '';
+  const totalDots = state.settings.longBreakAfter;
+  for (let i = 0; i < totalDots; i++) {
+    const d = document.createElement('div');
+    d.className = 'pomo-dot';
+    if (mode === 'work') {
+      if (i < p.lapIndex) d.classList.add('done');
+      if (i === p.lapIndex) d.classList.add('current');
+    } else {
+      if (i < p.lapIndex) d.classList.add('done');
+    }
+    dots.appendChild(d);
+  }
+
+  const slot = document.getElementById('timer-task-slot');
+  slot.innerHTML = '';
+  if (p.currentTaskId) {
+    const task = state.tasks.find(x => x.id === p.currentTaskId);
+    if (task) slot.appendChild(buildTaskRow(task, false));
+  }
+  if (!slot.firstChild) {
+    const picker = document.createElement('div');
+    picker.className = 'new-group-btn';
+    picker.innerHTML = '<span class="plus">+</span><span>SELECT TASK</span>';
+    picker.addEventListener('click', openTaskPickerForSession);
+    slot.appendChild(picker);
+  }
+}
+
+function renderTimerDisplay() {
+  document.getElementById('timer-big').innerHTML = formatCountdown(state.pomo.remaining);
+}
+
+// ============ RENDER: TASKS ============
+function buildTaskRow(task, withDelete = true) {
+  const row = document.createElement('div');
+  row.className = 'task-row' + (task.done ? ' done' : '');
+  row.dataset.id = task.id;
+
+  const dueToday = isTaskDueToday(task);
+
+  const cb = document.createElement('div');
+  cb.className = 'checkbox';
+  if (dueToday && !task.done && (task.repeat && task.repeat.type !== 'none')) {
+    cb.classList.add('due-today');
+  }
+  cb.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  row.appendChild(cb);
+
+  const body = document.createElement('div');
+  body.className = 'task-body';
+  const title = document.createElement('div');
+  title.className = 'task-title';
+  title.textContent = task.title;
+  body.appendChild(title);
+
+  const meta = document.createElement('div');
+  meta.className = 'task-meta';
+  if (task.category) {
+    const cat = document.createElement('span');
+    cat.className = 'cat'; cat.textContent = task.category.toUpperCase();
+    meta.appendChild(cat);
+  }
+  if (task.estimate) {
+    const est = document.createElement('span');
+    est.textContent = task.estimate + ' MIN';
+    meta.appendChild(est);
+  }
+  const rl = repeatLabel(task);
+  if (rl) {
+    const chip = document.createElement('span');
+    chip.className = 'chip-repeat';
+    chip.textContent = rl;
+    meta.appendChild(chip);
+  }
+  if (task.blockStart != null && task.blockEnd != null) {
+    const chip = document.createElement('span');
+    chip.className = 'chip-block';
+    chip.textContent = '◷ ' + fmtTime12(task.blockStart) + '–' + fmtTime12(task.blockEnd);
+    meta.appendChild(chip);
+  }
+  if (meta.children.length) body.appendChild(meta);
+  row.appendChild(body);
+
+  if (withDelete) {
+    const del = document.createElement('div');
+    del.className = 'task-del';
+    del.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.tasks = state.tasks.filter(t => t.id !== task.id);
+      save(); renderAll();
+      toast('Task removed');
+    });
+    row.appendChild(del);
+  }
+
+  cb.addEventListener('click', (e) => {
+    e.stopPropagation();
+    task.done = !task.done;
+    if (task.done) task.lastCompletedDate = todayKey();
+    save(); renderAll();
+  });
+
+  return row;
+}
+
+function renderTasks() {
+  const list = document.getElementById('groups-list');
+  list.innerHTML = '';
+
+  const done = state.tasks.filter(t => t.done).length;
+  document.getElementById('tasks-hdr-sub').textContent = `${done} / ${state.tasks.length} · ${state.tasks.length ? Math.round((done/state.tasks.length)*100) : 0}% DONE`;
+
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+  document.getElementById('tasks-date').textContent = dateStr;
+
+  if (!state.groups.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:24px 20px;color:#444;font-family:Doto,monospace;font-size:10px;letter-spacing:1.5px;';
+    empty.textContent = 'NO GROUPS YET — CREATE ONE BELOW';
+    list.appendChild(empty);
+  } else {
+    state.groups.forEach(g => list.appendChild(buildGroupCard(g)));
+  }
+
+  const ungrouped = state.tasks.filter(t => !t.groupId);
+  if (ungrouped.length) {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    const hdr = document.createElement('div');
+    hdr.className = 'group-hdr';
+    const left = document.createElement('div');
+    left.className = 'group-hdr-l';
+    const dot = document.createElement('div');
+    dot.className = 'group-dot';
+    dot.style.background = '#333';
+    left.appendChild(dot);
+    const name = document.createElement('div');
+    name.className = 'group-name';
+    name.textContent = 'UNGROUPED';
+    left.appendChild(name);
+    hdr.appendChild(left);
+    const cnt = document.createElement('div');
+    cnt.className = 'group-count';
+    cnt.textContent = ungrouped.filter(t => t.done).length + '/' + ungrouped.length;
+    hdr.appendChild(cnt);
+    card.appendChild(hdr);
+    const taskList = document.createElement('div');
+    taskList.className = 'group-tasks';
+    ungrouped.forEach(t => taskList.appendChild(buildTaskRow(t)));
+    card.appendChild(taskList);
+    list.appendChild(card);
+  }
+
+  renderBlocks();
+}
+
+function buildGroupCard(group) {
+  const card = document.createElement('div');
+  card.className = 'group-card';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'group-hdr';
+
+  const left = document.createElement('div');
+  left.className = 'group-hdr-l';
+  const dot = document.createElement('div');
+  dot.className = 'group-dot';
+  dot.style.background = group.color;
+  left.appendChild(dot);
+  const name = document.createElement('div');
+  name.className = 'group-name';
+  name.textContent = group.name;
+  left.appendChild(name);
+  hdr.appendChild(left);
+
+  const tools = document.createElement('div');
+  tools.className = 'group-tools';
+  const taskCount = document.createElement('div');
+  taskCount.className = 'group-count';
+  const groupTasks = state.tasks.filter(t => t.groupId === group.id);
+  const groupDone = groupTasks.filter(t => t.done).length;
+  taskCount.textContent = groupDone + '/' + groupTasks.length;
+  tools.appendChild(taskCount);
+
+  const delBtn = document.createElement('div');
+  delBtn.className = 'group-tool';
+  delBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showModal(`
+      <div class="modal-title">DELETE GROUP<span class="close-x" onclick="hideModal()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+      <div style="color:#999;font-size:12px;margin-bottom:20px;">Delete "${group.name}" and all its tasks?</div>
+      <div class="modal-actions">
+        <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+        <div class="btn btn-primary" id="m-save">DELETE</div>
+      </div>
+    `);
+    document.getElementById('m-cancel').onclick = hideModal;
+    document.getElementById('m-save').onclick = () => {
+      state.tasks = state.tasks.filter(t => t.groupId !== group.id);
+      state.groups = state.groups.filter(g => g.id !== group.id);
+      save(); hideModal(); renderAll();
+      toast('Group deleted');
+    };
+  });
+  tools.appendChild(delBtn);
+  hdr.appendChild(tools);
+  card.appendChild(hdr);
+
+  const taskList = document.createElement('div');
+  taskList.className = 'group-tasks';
+  if (groupTasks.length === 0) {
+    const e = document.createElement('div');
+    e.className = 'group-empty';
+    e.textContent = 'EMPTY';
+    taskList.appendChild(e);
+  } else {
+    groupTasks.forEach(t => taskList.appendChild(buildTaskRow(t)));
+  }
+  card.appendChild(taskList);
+
+  const addBtn = document.createElement('div');
+  addBtn.className = 'group-add-task';
+  addBtn.innerHTML = '<span class="plus">+</span><span>ADD TASK</span>';
+  addBtn.addEventListener('click', () => openAddTask(group.id));
+  card.appendChild(addBtn);
+
+  return card;
+}
+
+// ============ RENDER: TIMEBLOCKS ============
+function renderBlocks() {
+  const list = document.getElementById('blocks-list');
+  list.innerHTML = '';
+
+  const todayK = todayKey();
+  const explicitBlocks = state.blocks.filter(b => b.date === todayK).map(b => ({ ...b, source: 'block' }));
+  const taskBlocks = state.tasks
+    .filter(t => t.blockStart != null && t.blockEnd != null && isTaskDueToday(t))
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      startMin: t.blockStart,
+      endMin: t.blockEnd,
+      color: (state.groups.find(g => g.id === t.groupId) || {}).color || '#5C7AA8',
+      source: 'task'
+    }));
+  const allBlocks = [...explicitBlocks, ...taskBlocks].sort((a, b) => a.startMin - b.startMin);
+
+  if (!allBlocks.length) {
+    const e = document.createElement('div');
+    e.style.cssText = 'text-align:center;padding:16px 0;color:#444;font-family:Doto,monospace;font-size:10px;letter-spacing:1.2px;';
+    e.textContent = 'NO BLOCKS SCHEDULED TODAY';
+    list.appendChild(e);
+  } else {
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    allBlocks.forEach(b => {
+      const row = document.createElement('div');
+      row.className = 'block-row';
+      const isCurrent = nowMin >= b.startMin && nowMin < b.endMin;
+      if (isCurrent) row.classList.add('block-current');
+
+      const stripe = document.createElement('div');
+      stripe.className = 'block-stripe';
+      stripe.style.background = b.color;
+      row.appendChild(stripe);
+
+      const body = document.createElement('div');
+      body.className = 'block-body';
+      const title = document.createElement('div');
+      title.className = 'block-title';
+      title.textContent = b.title;
+      body.appendChild(title);
+      const time = document.createElement('div');
+      time.className = 'block-time';
+      time.textContent = fmtTime12(b.startMin) + ' → ' + fmtTime12(b.endMin) + (b.source === 'task' ? ' · FROM TASK' : '');
+      body.appendChild(time);
+      row.appendChild(body);
+
+      if (b.source === 'block') {
+        const del = document.createElement('div');
+        del.className = 'block-del';
+        del.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+        del.addEventListener('click', () => {
+          state.blocks = state.blocks.filter(x => x.id !== b.id);
+          save(); renderAll();
+          toast('Block removed');
+        });
+        row.appendChild(del);
+      }
+
+      list.appendChild(row);
+    });
+  }
+
+  renderTimeline(allBlocks);
+}
+
+function renderTimeline(blocks) {
+  const timeline = document.getElementById('timeline');
+  timeline.querySelectorAll('.timeline-block').forEach(el => el.remove());
+  const START = 6 * 60, END = 22 * 60, RANGE = END - START;
+  blocks.forEach(b => {
+    const el = document.createElement('div');
+    el.className = 'timeline-block';
+    const leftPct = Math.max(0, (b.startMin - START) / RANGE * 100);
+    const rightPct = Math.min(100, (b.endMin - START) / RANGE * 100);
+    const widthPct = Math.max(1.5, rightPct - leftPct);
+    el.style.left = leftPct + '%';
+    el.style.width = widthPct + '%';
+    el.style.background = b.color;
+    if (widthPct > 12) el.textContent = b.title.toUpperCase().slice(0, 12);
+    timeline.appendChild(el);
+  });
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowPct = ((nowMin - START) / RANGE) * 100;
+  const nowEl = document.getElementById('timeline-now');
+  if (nowPct >= 0 && nowPct <= 100) {
+    nowEl.style.display = '';
+    nowEl.style.left = nowPct + '%';
+  } else {
+    nowEl.style.display = 'none';
+  }
+}
+
+// ============ RENDER: ANALYTICS ============
+function getRangeData(range) {
+  const now = Date.now();
+  const dayMs = 86400000;
+  if (range === 'day') {
+    const today = startOfDay(now);
+    const yesterday = today - dayMs;
+    const buckets = new Array(12).fill(0);
+    const prev = new Array(12).fill(0);
+    state.sessions.filter(s => s.type === 'work').forEach(s => {
+      const h = new Date(s.ts).getHours();
+      const idx = Math.min(11, Math.floor(h/2));
+      if (dayKey(s.ts) === dayKey(today)) buckets[idx] += s.minutes;
+      else if (dayKey(s.ts) === dayKey(yesterday)) prev[idx] += s.minutes;
+    });
+    const liveMin = getLiveTodayMinutes() - getTodayMinutes();
+    if (liveMin > 0) buckets[Math.min(11, Math.floor(new Date().getHours()/2))] += liveMin;
+    return { labels: ['12A','2A','4A','6A','8A','10A','12P','2P','4P','6P','8P','10P'], thisData: buckets, lastData: prev, total: buckets.reduce((a,b)=>a+b,0), prevTotal: prev.reduce((a,b)=>a+b,0) };
+  }
+  if (range === 'week') {
+    const days = [], prev = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+      days.push(getMinutesOnDay(d.getTime()));
+      const d2 = new Date(d); d2.setDate(d2.getDate() - 7);
+      prev.push(getMinutesOnDay(d2.getTime()));
+    }
+    const liveMin = getLiveTodayMinutes() - getTodayMinutes();
+    if (liveMin > 0) days[6] += liveMin;
+    return { labels: ['M','T','W','T','F','S','S'], thisData: days, lastData: prev, total: days.reduce((a,b)=>a+b,0), prevTotal: prev.reduce((a,b)=>a+b,0) };
+  }
+  if (range === 'month') {
+    const buckets = [0,0,0,0], prev = [0,0,0,0];
+    state.sessions.filter(s => s.type === 'work').forEach(s => {
+      const weeksAgo = Math.floor((now - s.ts) / (7*dayMs));
+      if (weeksAgo < 4) buckets[3 - weeksAgo] += s.minutes;
+      else if (weeksAgo < 8) prev[3 - (weeksAgo - 4)] += s.minutes;
+    });
+    const liveMin = getLiveTodayMinutes() - getTodayMinutes();
+    if (liveMin > 0) buckets[3] += liveMin;
+    return { labels: ['W1','W2','W3','W4'], thisData: buckets, lastData: prev, total: buckets.reduce((a,b)=>a+b,0), prevTotal: prev.reduce((a,b)=>a+b,0) };
+  }
+  const buckets = [], prev = [];
+  for (let i = 11; i >= 0; i--) {
+    let sum = 0;
+    for (let d = 0; d < 7; d++) sum += getMinutesOnDay(now - (i*7 + d) * dayMs);
+    buckets.push(sum); prev.push(0);
+  }
+  const liveMin = getLiveTodayMinutes() - getTodayMinutes();
+  if (liveMin > 0) buckets[11] += liveMin;
+  return { labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'], thisData: buckets, lastData: prev, total: buckets.reduce((a,b)=>a+b,0), prevTotal: 0 };
+}
+
+function renderAnalytics() {
+  const range = state.analyticsRange;
+  const d = getRangeData(range);
+  const totalSessions = state.sessions.filter(s => s.type === 'work');
+  const taskCount = state.tasks.filter(t => t.done).length;
+  const streak = computeStreak();
+  document.getElementById('analytics-sub').textContent = `WK ${getWeekNumber()} · ${new Date().getFullYear()}`;
+  buildCompareChart(document.getElementById('compareChart'), d.thisData, d.lastData, { max: Math.max(state.settings.dailyGoalMinutes, ...d.thisData)*1.2 });
+  const labels = document.getElementById('compare-labels');
+  labels.innerHTML = '';
+  d.labels.forEach((l, i) => {
+    const s = document.createElement('span');
+    s.textContent = l;
+    if (i === d.labels.length - 1) s.classList.add('today');
+    labels.appendChild(s);
+  });
+  document.getElementById('compare-total').textContent = fmtMin(d.total);
+  const delta = d.total - d.prevTotal;
+  document.getElementById('compare-delta').textContent = (delta>=0?'+':'') + fmtMinShort(Math.abs(delta));
+  const grid = document.getElementById('metric-grid');
+  grid.innerHTML = '';
+  const metrics = [
+    { lbl: 'TOTAL', val: fmtMin(d.total), delta: '+' + fmtMinShort(Math.max(0, delta)) },
+    { lbl: 'SESSIONS', val: String(totalSessions.length), delta: '' },
+    { lbl: 'TASKS DONE', val: String(taskCount), delta: '' },
+    { lbl: 'AVG', val: fmtMin(Math.round(d.total / Math.max(1, d.thisData.length))), delta: '' }
+  ];
+  metrics.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'metric';
+    el.innerHTML = `<div class="metric-lbl">${m.lbl}</div><div class="metric-val">${m.val}</div>${m.delta ? `<div class="metric-delta up">▲ ${m.delta}</div>` : ''}`;
+    grid.appendChild(el);
+  });
+  const hourBuckets = new Array(8).fill(0);
+  let peakIdx = -1, peakVal = 0;
+  state.sessions.filter(s => s.type === 'work').forEach(s => {
+    const h = new Date(s.ts).getHours();
+    const idx = Math.min(7, Math.max(0, Math.floor((h - 6) / 2)));
+    hourBuckets[idx] += s.minutes;
+  });
+  const liveMin = getLiveTodayMinutes() - getTodayMinutes();
+  if (liveMin > 0) hourBuckets[Math.min(7, Math.max(0, Math.floor((new Date().getHours() - 6) / 2)))] += liveMin;
+  hourBuckets.forEach((v, i) => { if (v > peakVal) { peakVal = v; peakIdx = i; } });
+  buildLineChart(document.getElementById('hoursChart'), hourBuckets, { max: Math.max(1, ...hourBuckets)*1.2, highlight: peakIdx });
+  if (peakIdx >= 0) {
+    const startH = 6 + peakIdx * 2, endH = startH + 2;
+    const suffix = startH >= 12 ? 'PM' : 'AM';
+    const sD = startH > 12 ? startH - 12 : startH;
+    const eD = endH > 12 ? endH - 12 : endH;
+    document.getElementById('peak-lbl').textContent = `${sD}–${eD} ${suffix}`;
+  } else document.getElementById('peak-lbl').textContent = '—';
+
+  let bestDay = '—', bestVal = 0;
+  const perDay = {};
+  state.sessions.filter(s => s.type === 'work').forEach(s => {
+    const k = dayKey(s.ts);
+    perDay[k] = (perDay[k] || 0) + s.minutes;
+    if (perDay[k] > bestVal) {
+      bestVal = perDay[k];
+      bestDay = new Date(s.ts).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    }
+  });
+  document.getElementById('bestday-lbl').textContent = bestDay;
+  document.getElementById('rec-streak').textContent = streak + 'D';
+  document.getElementById('rec-day').textContent = fmtMin(bestVal);
+  let bestWeek = 0;
+  const perWeek = {};
+  state.sessions.filter(s => s.type === 'work').forEach(s => {
+    const wk = getWeekNumberOf(new Date(s.ts));
+    perWeek[wk] = (perWeek[wk] || 0) + s.minutes;
+  });
+  Object.values(perWeek).forEach(v => { if (v > bestWeek) bestWeek = v; });
+  document.getElementById('rec-week').textContent = fmtMin(bestWeek);
+  document.getElementById('rec-sessions').textContent = String(totalSessions.length);
+}
+
+function getWeekNumber() {
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+}
+function getWeekNumberOf(date) {
+  const onejan = new Date(date.getFullYear(), 0, 1);
+  return date.getFullYear() + '-W' + Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+}
+
+function renderSettings() {
+  document.getElementById('sv-work').textContent = state.settings.workMinutes + ' MIN';
+  document.getElementById('sv-long').textContent = state.settings.longBreakAfter + ' POMOS';
+  document.getElementById('sv-goal').textContent = state.settings.dailyGoalMinutes + ' MIN';
+  document.getElementById('sv-name').textContent = state.settings.userName ? state.settings.userName.toUpperCase() : '— NOT SET';
+  document.querySelectorAll('#theme-list .theme-option').forEach(el => el.classList.toggle('active', el.dataset.theme === state.settings.theme));
+}
+
+function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  if (wf.children.length) return;
+  [2,5,8,4,9,6,3,8,5,9,4,6,3,7,5,8,4,6].forEach((h, i) => {
+    const d = document.createElement('div');
+    d.className = 'w' + (i < 12 ? ' on' : '');
+    wf.appendChild(d);
+  });
+}
+
+function renderAll() {
+  renderDashboard();
+  renderTimer();
+  renderTasks();
+  renderAnalytics();
+  renderSettings();
+}
+
+// ============ MODALS ============
+function showModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function hideModal() {
+  document.getElementById('modal-backdrop').classList.remove('show');
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function openAddTask(presetGroupId) {
+  const groupChips = [{ id: null, name: 'NONE', color: '#333' }, ...state.groups].map(g => {
+    const active = g.id === presetGroupId || (!presetGroupId && g.id === null);
+    return `<div class="chip${active ? ' active' : ''}" data-gid="${g.id || ''}">
+      <span class="chip-dot" style="background:${g.color}"></span>${g.name.toUpperCase()}
+    </div>`;
+  }).join('');
+
+  const dayLetters = ['M','T','W','T','F','S','S'];
+
+  showModal(`
+    <div class="modal-title">NEW TASK<span class="close-x" id="m-cancel-x"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+
+    <input class="modal-input" id="m-title" placeholder="What needs to be done?" autofocus>
+
+    <div class="modal-row">
+      <input class="modal-input" id="m-cat" placeholder="Category (optional)">
+      <input class="modal-input" id="m-est" type="number" placeholder="Est. min">
+    </div>
+
+    <div class="modal-lbl">Group</div>
+    <div class="chips-row" id="m-group-chips">${groupChips}</div>
+
+    <div class="modal-lbl">Repeat</div>
+    <div class="chips-row" id="m-repeat-chips">
+      <div class="chip active" data-repeat="none">NONE</div>
+      <div class="chip" data-repeat="daily">DAILY</div>
+      <div class="chip" data-repeat="days">WEEKLY</div>
+    </div>
+
+    <div id="m-days-wrap" style="display:none;">
+      <div class="modal-lbl">On days</div>
+      <div class="days-row" id="m-days-row">
+        ${dayLetters.map((l, i) => `<div class="day-btn" data-day="${i}">${l}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="divider-soft"></div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-lbl">TIME BLOCK</div>
+        <div class="toggle-sub">Schedule this task on a timeline</div>
+      </div>
+      <div class="toggle" id="m-block-toggle"></div>
+    </div>
+
+    <div id="m-block-times" style="display:none;">
+      <div class="time-input-group">
+        <div>
+          <div class="time-mini-lbl">START</div>
+          <input class="modal-input" id="m-bstart" placeholder="9:00 AM" value="9:00 AM">
+        </div>
+        <div>
+          <div class="time-mini-lbl">END</div>
+          <input class="modal-input" id="m-bend" placeholder="10:00 AM" value="10:00 AM">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+      <div class="btn btn-primary" id="m-save">ADD TASK</div>
+    </div>
+  `);
+
+  const modal = {
+    groupId: presetGroupId || null,
+    repeat: 'none',
+    days: new Set(),
+    blockOn: false
+  };
+
+  document.querySelectorAll('#m-group-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#m-group-chips .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      modal.groupId = chip.dataset.gid || null;
+    });
+  });
+
+  document.querySelectorAll('#m-repeat-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#m-repeat-chips .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      modal.repeat = chip.dataset.repeat;
+      document.getElementById('m-days-wrap').style.display = modal.repeat === 'days' ? '' : 'none';
+    });
+  });
+
+  document.querySelectorAll('#m-days-row .day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = parseInt(btn.dataset.day);
+      if (modal.days.has(d)) { modal.days.delete(d); btn.classList.remove('active'); }
+      else { modal.days.add(d); btn.classList.add('active'); }
+    });
+  });
+
+  document.getElementById('m-block-toggle').addEventListener('click', () => {
+    modal.blockOn = !modal.blockOn;
+    document.getElementById('m-block-toggle').classList.toggle('on', modal.blockOn);
+    document.getElementById('m-block-times').style.display = modal.blockOn ? '' : 'none';
+  });
+
+  document.getElementById('m-cancel').onclick = hideModal;
+  document.getElementById('m-cancel-x').onclick = hideModal;
+  document.getElementById('m-save').onclick = () => {
+    const title = document.getElementById('m-title').value.trim();
+    if (!title) return toast('Enter a title');
+
+    const cat = document.getElementById('m-cat').value.trim();
+    const est = parseInt(document.getElementById('m-est').value) || 0;
+
+    let repeat = { type: 'none' };
+    if (modal.repeat === 'daily') repeat = { type: 'daily' };
+    if (modal.repeat === 'days') {
+      if (modal.days.size === 0) return toast('Pick at least one day');
+      repeat = { type: 'days', days: Array.from(modal.days) };
+    }
+
+    let blockStart = null, blockEnd = null;
+    if (modal.blockOn) {
+      blockStart = parseTime(document.getElementById('m-bstart').value);
+      blockEnd = parseTime(document.getElementById('m-bend').value);
+      if (blockStart == null || blockEnd == null || blockEnd <= blockStart) return toast('Invalid times');
+      if (blockStart < 6 * 60 || blockEnd > 22 * 60) return toast('Between 6:00 AM and 10:00 PM');
+    }
+
+    state.tasks.push({
+      id: 't_' + Date.now(),
+      title,
+      category: cat,
+      estimate: est,
+      done: false,
+      created: Date.now(),
+      groupId: modal.groupId,
+      repeat,
+      blockStart,
+      blockEnd,
+      lastCompletedDate: null
+    });
+    save();
+    hideModal();
+    renderAll();
+    toast('Task added');
+  };
+
+  setTimeout(() => document.getElementById('m-title').focus(), 100);
+}
+
+function openNewGroup() {
+  const swatches = GROUP_COLORS.map((c, i) => `<div class="color-swatch${i===0?' active':''}" data-color="${c}" style="background:${c}"></div>`).join('');
+  showModal(`
+    <div class="modal-title">NEW GROUP<span class="close-x" id="m-cancel-x"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+    <input class="modal-input" id="m-gname" placeholder="Group name (Daily, Work, ...)" autofocus>
+    <div class="modal-lbl">COLOR</div>
+    <div class="color-picker" id="m-colors">${swatches}</div>
+    <div class="modal-actions">
+      <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+      <div class="btn btn-primary" id="m-save">CREATE</div>
+    </div>
+  `);
+  let selectedColor = GROUP_COLORS[0];
+  document.querySelectorAll('#m-colors .color-swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('#m-colors .color-swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+      selectedColor = s.dataset.color;
+    });
+  });
+  document.getElementById('m-cancel').onclick = hideModal;
+  document.getElementById('m-cancel-x').onclick = hideModal;
+  document.getElementById('m-save').onclick = () => {
+    const name = document.getElementById('m-gname').value.trim();
+    if (!name) return;
+    state.groups.push({ id: 'g_' + Date.now(), name, color: selectedColor });
+    save(); hideModal(); renderAll();
+    toast('Group created');
+  };
+  setTimeout(() => document.getElementById('m-gname').focus(), 100);
+}
+
+function openAddBlock() {
+  const now = new Date();
+  const defaultStart = now.getHours() * 60 + Math.floor(now.getMinutes() / 30) * 30;
+  const defaultEnd = Math.min(22 * 60, defaultStart + 60);
+  const swatches = BLOCK_COLORS.map((c, i) => `<div class="color-swatch${i===0?' active':''}" data-color="${c}" style="background:${c}"></div>`).join('');
+  showModal(`
+    <div class="modal-title">NEW TIMEBLOCK<span class="close-x" id="m-cancel-x"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+    <input class="modal-input" id="m-btitle" placeholder="What are you doing?" autofocus>
+    <div class="modal-row">
+      <div>
+        <div class="time-mini-lbl">START</div>
+        <input class="modal-input" id="m-bstart" placeholder="9:00 AM" value="${fmtTime12(defaultStart)}">
+      </div>
+      <div>
+        <div class="time-mini-lbl">END</div>
+        <input class="modal-input" id="m-bend" placeholder="10:00 AM" value="${fmtTime12(defaultEnd)}">
+      </div>
+    </div>
+    <div class="modal-lbl">COLOR</div>
+    <div class="color-picker" id="m-bcolors">${swatches}</div>
+    <div class="modal-actions">
+      <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+      <div class="btn btn-primary" id="m-save">ADD</div>
+    </div>
+  `);
+  let selectedColor = BLOCK_COLORS[0];
+  document.querySelectorAll('#m-bcolors .color-swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('#m-bcolors .color-swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+      selectedColor = s.dataset.color;
+    });
+  });
+  document.getElementById('m-cancel').onclick = hideModal;
+  document.getElementById('m-cancel-x').onclick = hideModal;
+  document.getElementById('m-save').onclick = () => {
+    const title = document.getElementById('m-btitle').value.trim();
+    if (!title) return;
+    const startMin = parseTime(document.getElementById('m-bstart').value);
+    const endMin = parseTime(document.getElementById('m-bend').value);
+    if (startMin == null || endMin == null || endMin <= startMin) return toast('Invalid times');
+    if (endMin > 22 * 60) return toast('Must end by 10:00 PM');
+    if (startMin < 6 * 60) return toast('Must start after 6:00 AM');
+    state.blocks.push({ id: 'b_' + Date.now(), title, date: todayKey(), startMin, endMin, color: selectedColor });
+    save(); hideModal(); renderAll();
+    toast('Block added');
+  };
+  setTimeout(() => document.getElementById('m-btitle').focus(), 100);
+}
+
+function openTaskPickerForSession() {
+  const avail = state.tasks.filter(t => !t.done);
+  if (!avail.length) {
+    showModal(`
+      <div class="modal-title">NO TASKS AVAILABLE<span class="close-x" onclick="hideModal()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+      <div style="color:#666;font-size:12px;margin-bottom:16px;">Add tasks first from the Tasks screen.</div>
+      <div class="modal-actions"><div class="btn modal-cancel" id="m-cancel">CLOSE</div></div>
+    `);
+    document.getElementById('m-cancel').onclick = hideModal;
+    return;
+  }
+  const rows = avail.map(t => `<div class="setting-row" data-id="${t.id}" style="border-color:#161616;">
+    <div class="setting-lbl">${t.title}</div>
+    <div class="setting-val">${t.category ? t.category.toUpperCase() : ''}</div>
+  </div>`).join('');
+  showModal(`
+    <div class="modal-title">SELECT TASK<span class="close-x" onclick="hideModal()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+    ${rows}
+    <div class="modal-actions"><div class="btn modal-cancel" id="m-cancel">CANCEL</div></div>
+  `);
+  document.getElementById('m-cancel').onclick = hideModal;
+  document.querySelectorAll('#modal-content .setting-row').forEach(el => {
+    el.onclick = () => {
+      state.pomo.currentTaskId = el.dataset.id;
+      hideModal(); renderAll();
+      toast('Task linked');
+    };
+  });
+}
+
+function openEditSetting(key) {
+  const cfg = {
+    userName: { label: 'YOUR NAME', type: 'text', current: state.settings.userName },
+    workMinutes: { label: 'WORK DURATION (MIN)', type: 'number', min: 5, max: 180, current: state.settings.workMinutes },
+    longBreakAfter: { label: 'LONG BREAK AFTER (POMOS)', type: 'number', min: 2, max: 10, current: state.settings.longBreakAfter },
+    dailyGoalMinutes: { label: 'DAILY GOAL (MIN)', type: 'number', min: 30, max: 720, current: state.settings.dailyGoalMinutes }
+  }[key];
+  if (!cfg) return;
+  showModal(`
+    <div class="modal-title">${cfg.label}<span class="close-x" onclick="hideModal()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+    <input class="modal-input" id="m-val" type="${cfg.type}" value="${cfg.current}">
+    <div class="modal-actions">
+      <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+      <div class="btn btn-primary" id="m-save">SAVE</div>
+    </div>
+  `);
+  document.getElementById('m-cancel').onclick = hideModal;
+  document.getElementById('m-save').onclick = () => {
+    const raw = document.getElementById('m-val').value;
+    if (cfg.type === 'text') state.settings[key] = raw.trim();
+    else {
+      const v = parseInt(raw);
+      if (isNaN(v) || v < cfg.min || v > cfg.max) return toast('Invalid value');
+      state.settings[key] = v;
+      if (key === 'workMinutes' || key === 'longBreakAfter') {
+        state.pomo.total = getPomoDuration(state.pomo.mode);
+        if (!state.pomo.running && !state.pomo.pausedAt) state.pomo.remaining = state.pomo.total;
+      }
+    }
+    save(); hideModal(); renderAll();
+    toast('Saved');
+  };
+  setTimeout(() => document.getElementById('m-val').focus(), 100);
+}
+
+function exportBackup() {
+  const data = { settings: state.settings, groups: state.groups, tasks: state.tasks, blocks: state.blocks, sessions: state.sessions, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `flow-backup-${todayKey()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup exported');
+}
+
+function importBackup() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'application/json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.settings) state.settings = { ...defaultSettings, ...data.settings };
+        if (Array.isArray(data.groups)) state.groups = data.groups;
+        if (Array.isArray(data.tasks)) state.tasks = data.tasks;
+        if (Array.isArray(data.blocks)) state.blocks = data.blocks;
+        if (Array.isArray(data.sessions)) state.sessions = data.sessions;
+        save(); pomoInit(); renderAll();
+        toast('Backup imported');
+      } catch(err) { toast('Invalid file'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function applyTheme(name) {
+  const theme = {
+    deerflow: { accent: '#FF4400', glow: 'rgba(255,68,0,0.5)' },
+    paper:    { accent: '#E85D2C', glow: 'rgba(232,93,44,0.5)' },
+    pantheon: { accent: '#3B7DB8', glow: 'rgba(59,125,184,0.5)' },
+    void:     { accent: '#FFFFFF', glow: 'rgba(255,255,255,0.4)' }
+  }[name] || { accent: '#FF4400', glow: 'rgba(255,68,0,0.5)' };
+  let styleTag = document.getElementById('theme-overrides');
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = 'theme-overrides';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = `
+    .hdr-status, .status-dot { background: ${theme.accent} !important; box-shadow: 0 0 8px ${theme.glow} !important; }
+    .play { background: ${theme.accent} !important; box-shadow: 0 0 24px ${theme.glow} !important; }
+    .nav-item.active { background: ${theme.accent} !important; box-shadow: 0 0 20px ${theme.glow} !important; }
+    .range-tab.active, .mode-tab.active { background: ${theme.accent} !important; box-shadow: 0 0 16px ${theme.glow} !important; }
+    .btn-primary { background: ${theme.accent} !important; box-shadow: 0 0 30px ${theme.glow} !important; }
+    .task-row.done .checkbox { background: ${theme.accent} !important; border-color: ${theme.accent} !important; }
+    .today-meta strong, .signal-foot, .metric-delta.up, .chart-stat.up strong { color: ${theme.accent} !important; }
+    .day-labels .today, .hour-labels span.active { color: ${theme.accent} !important; }
+    .idx-num { color: ${theme.accent} !important; }
+    .now-marker, .now-marker::before, .now-marker::after { background: ${theme.accent} !important; }
+    .hour-seg.s-half::after { background: ${theme.accent} !important; }
+    .session-time .colon, .timer-big .colon { color: ${theme.accent} !important; }
+    .pomo-dot.current { border-color: ${theme.accent} !important; }
+    .pomo-dot.current::after { background: ${theme.accent} !important; }
+    .tasks-bar.mid { background: ${theme.accent} !important; }
+    .timeline-now { background: ${theme.accent} !important; }
+    .timeline-now::before { background: ${theme.accent} !important; }
+    .pomo-lap-label strong { color: ${theme.accent} !important; }
+    .top-add-btn { border-color: ${theme.accent} !important; color: ${theme.accent} !important; background: rgba(255,68,0,0.06) !important; }
+    .top-add-btn .sub { color: ${theme.accent} !important; opacity: 0.6; }
+    .chip.active { border-color: ${theme.accent} !important; color: ${theme.accent} !important; background: rgba(255,68,0,0.12) !important; }
+    .day-btn.active { background: ${theme.accent} !important; border-color: ${theme.accent} !important; box-shadow: 0 0 12px ${theme.glow} !important; }
+    .toggle.on { background: ${theme.accent} !important; }
+    .task-meta .chip-repeat { color: ${theme.accent} !important; background: rgba(255,68,0,0.1) !important; }
+    .checkbox.due-today::after { background: ${theme.accent} !important; box-shadow: 0 0 6px ${theme.glow} !important; }
+    .theme-option.active { border-color: ${theme.accent} !important; }
+  `;
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', () => {
+  resetRepeatingTasks();
+  pomoInit();
+  buildWaveform();
+  applyTheme(state.settings.theme);
+  renderAll();
+
+  setInterval(() => {
+    if (document.getElementById('s-dashboard').classList.contains('active')) {
+      document.getElementById('dash-live-time').textContent = fmtClock(new Date());
+    }
+  }, 30000);
+
+  setInterval(() => {
+    if (document.getElementById('s-tasks').classList.contains('active')) renderBlocks();
+  }, 60000);
+
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(item.dataset.target).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('#s-timer .mode-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (state.pomo.running) return toast('Stop timer first');
+      pomoSwitchMode(tab.dataset.mode);
+    });
+  });
+
+  document.querySelectorAll('.range-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.range-tab').forEach(x => x.classList.remove('active'));
+      tab.classList.add('active');
+      state.analyticsRange = tab.dataset.range;
+      renderAnalytics();
+    });
+  });
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    if (state.pomo.running) pomoPause(); else pomoStart();
+  });
+  document.getElementById('btn-reset').addEventListener('click', () => { pomoReset(); toast('Reset'); });
+
+  document.getElementById('dash-play').addEventListener('click', () => {
+    if (state.sw.running) swPause(); else swStart();
+  });
+  document.getElementById('dash-status-txt').addEventListener('dblclick', () => {
+    if (state.sw.elapsedMs > 0 || state.sw.running) {
+      swReset();
+      toast('Stopwatch reset & logged');
+    }
+  });
+  document.getElementById('dash-status-txt').addEventListener('click', () => {
+    if (!state.sw.running && state.sw.elapsedMs > 0) {
+      swReset();
+      toast('Logged · stopwatch cleared');
+    }
+  });
+
+  document.getElementById('top-add-task-btn').addEventListener('click', () => openAddTask(null));
+  document.getElementById('new-group-btn').addEventListener('click', openNewGroup);
+  document.getElementById('add-block-btn').addEventListener('click', openAddBlock);
+
+  document.querySelectorAll('.setting-row[data-set]').forEach(row => {
+    row.addEventListener('click', () => openEditSetting(row.dataset.set));
+  });
+
+  document.getElementById('export-btn').addEventListener('click', exportBackup);
+  document.getElementById('import-btn').addEventListener('click', importBackup);
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    showModal(`
+      <div class="modal-title">RESET ALL DATA<span class="close-x" onclick="hideModal()"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></span></div>
+      <div style="color:#999;font-size:12px;margin-bottom:20px;">Erases everything. Cannot be undone.</div>
+      <div class="modal-actions">
+        <div class="btn modal-cancel" id="m-cancel">CANCEL</div>
+        <div class="btn btn-primary" id="m-save">RESET</div>
+      </div>
+    `);
+    document.getElementById('m-cancel').onclick = hideModal;
+    document.getElementById('m-save').onclick = () => {
+      ['settings','groups','tasks','blocks','sessions','timer_state','sw_state'].forEach(k => DB.del(k));
+      state.settings = { ...defaultSettings };
+      state.groups = []; state.tasks = []; state.blocks = []; state.sessions = [];
+      state.sw = { running: false, elapsedMs: 0, startedAt: null, pausedAt: null };
+      state.pomo = { mode: 'work', running: false, remaining: 0, total: 0, lapIndex: 0, lapsCompleted: 0, startedAt: null, pausedAt: null, currentTaskId: null };
+      pomoInit();
+      hideModal(); applyTheme(state.settings.theme); renderAll();
+      toast('All data cleared');
+    };
+  });
+
+  document.querySelectorAll('#theme-list .theme-option').forEach(el => {
+    el.addEventListener('click', () => {
+      state.settings.theme = el.dataset.theme;
+      save(); applyTheme(el.dataset.theme); renderSettings();
+      toast('Theme: ' + el.dataset.theme.toUpperCase());
+    });
+  });
+
+  document.getElementById('modal-backdrop').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-backdrop') hideModal();
+  });
+
+  const savedSW = DB.get('sw_state', null);
+  if (savedSW) {
+    state.sw = { ...state.sw, ...savedSW };
+    if (state.sw.running && state.sw.startedAt) swTick();
+    renderDashboardSession();
+  }
+  setInterval(() => DB.set('sw_state', state.sw), 2000);
+});
+</script>
+</body>
+</html>
