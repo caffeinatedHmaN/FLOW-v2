@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FLOW</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF4400">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{background:#050505;color:#E8E6E3;font-family:'JetBrains Mono',ui-monospace,monospace;height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+  #app{position:fixed;inset:0;display:flex;flex-direction:column;background:#050505}
+  .screens{flex:1;position:relative;overflow:hidden}
+  .screen{position:absolute;inset:0;overflow-y:auto;padding:20px 18px 100px;display:none;-webkit-overflow-scrolling:touch}
+  .screen.active{display:block}
+  .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .brand{font-family:'Doto',monospace;font-size:26px;font-weight:800;letter-spacing:2px;color:#fff}
+  .clock{font-family:'Doto',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#888;display:flex;align-items:center;gap:6px}
+  .dot{width:6px;height:6px;border-radius:50%;background:#FF4400;box-shadow:0 0 8px rgba(255,68,0,.9);animation:blink 2s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .greet-l1{font-family:'Doto',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#666;margin-bottom:6px}
+  .greet-l2{font-size:17px;font-weight:600;letter-spacing:-.3px;color:#E8E6E3;margin-bottom:20px}
+  .greet-l2 .dim{color:#555;font-weight:400}
+  .card{background:#0C0C0C;border:1px solid #161616;border-radius:16px;padding:14px 14px;margin-bottom:10px;position:relative}
+  .card-hdr{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+  .idx{font-family:'Doto',monospace;font-size:10px;font-weight:700;color:#888}
+  .idx.hot{color:#FF4400}
+  .idx-l{font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.4px;color:#888}
+  .today-row{display:flex;align-items:center;gap:14px}
+  .today-l{flex:1;min-width:0}
+  .today-num{font-family:'Doto',monospace;font-size:52px;font-weight:800;letter-spacing:-2px;line-height:.9;color:#fff;display:flex;align-items:baseline}
+  .today-num .u{font-size:18px;font-weight:600;color:#666;margin-left:4px}
+  .today-meta{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:10px;color:#777}
+  .today-meta strong{color:#FF4400;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .goal-tag{padding:2px 6px;background:#161616;border-radius:4px;font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:#888}
+  .ring{width:78px;height:78px;position:relative;flex-shrink:0}
+  .ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+  .ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-pct{font-family:'Doto',monospace;font-size:18px;font-weight:800;color:#fff;line-height:1}
+  .ring-lbl{font-family:'Doto',monospace;font-size:7px;font-weight:700;letter-spacing:1.2px;color:#666;margin-top:2px}
+  .stat-row{display:flex;gap:10px;margin-bottom:10px}
+  .stat-card{flex:1;background:#0C0C0C;border:1px solid #161616;border-radius:16px;padding:14px}
+  .stat-num{font-family:'Doto',monospace;font-size:34px;font-weight:800;letter-spacing:-1px;color:#fff;line-height:1}
+  .stat-sub{font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:#666;margin-top:4px}
+  .stat-foot{font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1.2px;color:#FF4400;margin-top:8px}
+  .hours{display:flex;gap:5px;height:76px;margin-bottom:10px}
+  .hour-seg{flex:1;background:#141414;border:1px solid #1A1A1A;border-radius:999px;position:relative;overflow:hidden}
+  .hour-seg .fill{position:absolute;inset:0;background:#E8E6E3;border-radius:999px;transform-origin:bottom}
+  .hour-seg.s-half .fill{background:linear-gradient(180deg,transparent 48%,rgba(232,230,227,.55) 52%,#E8E6E3)}
+  .hour-seg.s-half::after{content:'';position:absolute;left:0;right:0;top:44%;height:2px;background:#FF4400;border-radius:2px;box-shadow:0 0 8px rgba(255,68,0,.6)}
+  .hour-seg.s-empty::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 1px,transparent 1px,transparent 7px);border-radius:999px}
+  .hour-lbls{display:flex;gap:5px}
+  .hour-lbls span{flex:1;text-align:center;font-family:'Doto',monospace;font-size:8.5px;font-weight:700;color:#444}
+  .hour-lbls span.on{color:#999}
+  .hour-lbls span.act{color:#FF4400}
+  .week-chart{width:100%;height:100px;display:block}
+  .day-lbls{display:flex;justify-content:space-between;padding:6px 4px 0;font-family:'Doto',monospace;font-size:9px;font-weight:700;color:#555}
+  .day-lbls .today{color:#FF4400}
+  .session-card{background:#0C0C0C;border:1px solid #161616;border-radius:16px;padding:14px;margin-bottom:10px}
+  .session-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .session-tag{display:flex;align-items:center;gap:8px;font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.4px;color:#888}
+  .status{display:flex;align-items:center;gap:6px;font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1.2px;color:#777}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:#FF4400;box-shadow:0 0 8px rgba(255,68,0,.9);animation:blink 1.8s ease-in-out infinite}
+  .session-time{font-family:'Doto',monospace;font-size:50px;font-weight:800;letter-spacing:-2px;line-height:.9;color:#fff;display:flex;align-items:baseline;margin-bottom:12px}
+  .session-time .colon{color:#FF4400;animation:cb 1s step-end infinite;margin:0 -2px}
+  @keyframes cb{0%,49%{opacity:1}50%,100%{opacity:.25}}
+  .sw-bar{display:flex;justify-content:space-between;align-items:flex-end;padding-top:12px;border-top:1px solid #161616;margin-top:4px}
+  .sw-info{font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1px;color:#666;line-height:1.6}
+  .sw-info strong{color:#E8E6E3}
+  .play-btn{width:48px;height:48px;border-radius:50%;background:#FF4400;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 24px rgba(255,68,0,.5);color:#fff}
+  .mode-tabs{display:flex;gap:4px;padding:4px;background:#0C0C0C;border:1px solid #161616;border-radius:999px;margin-bottom:22px}
+  .mode-tab{flex:1;padding:10px 0;text-align:center;font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.2px;color:#666;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  .mode-tab.active{background:#FF4400;color:#fff}
+  .timer-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 0 20px}
+  .timer-mode{font-family:'Doto',monospace;font-size:11px;font-weight:700;letter-spacing:2.5px;color:#FF4400;margin-bottom:10px}
+  .timer-big{font-family:'Doto',monospace;font-size:84px;font-weight:800;letter-spacing:-4px;color:#fff;line-height:.9;margin-bottom:20px}
+  .lap-lbl{font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:2px;color:#888;margin-bottom:12px}
+  .lap-lbl strong{color:#FF4400}
+  .pomo-dots{display:flex;gap:8px;justify-content:center}
+  .pomo-dot{width:14px;height:14px;border-radius:50%;background:#161616;border:1px solid #222}
+  .pomo-dot.done{background:#E8E6E3;border-color:#E8E6E3}
+  .pomo-dot.curr{background:transparent;border-color:#FF4400;box-shadow:0 0 10px rgba(255,68,0,.6)}
+  .pomo-dot.curr::after{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:#FF4400;transform:translate(2px,2px)}
+  .timer-controls{display:flex;gap:10px;margin-top:26px;padding:0 6px}
+  .btn{height:54px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:'Doto',monospace;font-size:13px;font-weight:700;letter-spacing:1.4px;border:none;cursor:pointer}
+  .btn-primary{background:#FF4400;color:#fff;flex:1;box-shadow:0 0 30px rgba(255,68,0,.4)}
+  .btn-ghost{background:#0C0C0C;border:1px solid #222;color:#888;width:54px;flex:0 0 54px}
+  .top-add{display:flex;align-items:center;gap:10px;padding:16px 18px;border:1px solid #FF4400;background:rgba(255,68,0,.06);border-radius:14px;cursor:pointer;margin-bottom:22px;font-family:'Doto',monospace;font-size:12px;font-weight:800;letter-spacing:1.6px;color:#FF4400}
+  .top-add .plus{font-size:20px;font-weight:400}
+  .top-add .sub{color:rgba(255,68,0,.6);font-size:9px;letter-spacing:1.2px;margin-left:auto}
+  .grp{background:#0C0C0C;border:1px solid #161616;border-radius:16px;padding:14px;margin-bottom:10px}
+  .grp-hdr{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px}
+  .grp-l{display:flex;align-items:center;gap:10px}
+  .grp-dot{width:8px;height:8px;border-radius:2px;background:#FF4400}
+  .grp-name{font-family:'Doto',monospace;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#fff}
+  .grp-count{font-family:'Doto',monospace;font-size:9px;font-weight:700;color:#666}
+  .grp-empty{font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.2px;color:#3A3A3A;padding:10px 4px}
+  .task-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #0F0F0F}
+  .task-row:last-child{border-bottom:none}
+  .task-row.done .task-title{text-decoration:line-through;color:#555}
+  .cb{width:18px;height:18px;border-radius:5px;border:1.5px solid #333;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+  .task-row.done .cb{background:#FF4400;border-color:#FF4400}
+  .task-title{flex:1;font-size:13px;font-weight:500;color:#E8E6E3;line-height:1.3}
+  .task-del{opacity:.3;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666}
+  .grp-add{display:flex;align-items:center;gap:8px;padding:12px 0 4px;margin-top:6px;border-top:1px dashed #1A1A1A;font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.2px;color:#555;cursor:pointer}
+  .grp-add:hover{color:#FF4400}
+  .new-grp{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:1px dashed #333;border-radius:12px;cursor:pointer;font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.4px;color:#666;margin-top:6px}
+  .range-tabs{display:flex;gap:4px;padding:4px;background:#0C0C0C;border:1px solid #161616;border-radius:999px;margin-bottom:16px}
+  .range-tab{flex:1;padding:9px 0;text-align:center;font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.2px;color:#666;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  .range-tab.active{background:#FF4400;color:#fff}
+  .legend{display:flex;gap:16px;margin-bottom:10px}
+  .legend-item{display:flex;align-items:center;gap:6px;font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1px;color:#666}
+  .legend-dot{width:8px;height:8px;border-radius:50%}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .metric{background:#0C0C0C;border:1px solid #161616;border-radius:14px;padding:14px}
+  .metric-lbl{font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1.4px;color:#666;margin-bottom:8px}
+  .metric-val{font-family:'Doto',monospace;font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
+  .metric-delta{font-family:'Doto',monospace;font-size:9px;font-weight:700;color:#FF4400;margin-top:6px}
+  .records{padding:6px 0}
+  .rec{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #161616}
+  .rec:last-child{border-bottom:none}
+  .rec-lbl{font-family:'JetBrains Mono',monospace;font-size:13px;color:#E8E6E3}
+  .rec-val{font-family:'Doto',monospace;font-size:12px;font-weight:700;letter-spacing:1px;color:#888}
+  .sec-lbl{font-family:'Doto',monospace;font-size:10px;font-weight:700;letter-spacing:1.6px;color:#666;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+  .sec-lbl::after{content:'';flex:1;height:1px;background:#161616}
+  .set-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #161616;cursor:pointer}
+  .set-row:last-child{border-bottom:none}
+  .set-lbl{font-size:13px;color:#E8E6E3;font-weight:500}
+  .set-val{font-family:'Doto',monospace;font-size:11px;font-weight:700;letter-spacing:1px;color:#666;display:flex;align-items:center;gap:6px}
+  .theme-list{display:flex;flex-direction:column}
+  .theme-opt{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #161616;cursor:pointer}
+  .theme-opt:last-child{border-bottom:none}
+  .theme-radio{width:18px;height:18px;border-radius:50%;border:2px solid #333;position:relative;flex-shrink:0}
+  .theme-opt.active .theme-radio{border-color:#FF4400}
+  .theme-opt.active .theme-radio::after{content:'';position:absolute;inset:4px;border-radius:50%;background:#FF4400}
+  .swatch{width:22px;height:22px;border-radius:5px;flex-shrink:0}
+  .theme-nm{font-family:'Doto',monospace;font-size:12px;font-weight:700;letter-spacing:1px;color:#E8E6E3}
+  .nav{display:flex;justify-content:space-between;padding:6px 18px;background:#050505;border-top:1px solid #161616;padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;cursor:pointer}
+  .nav-icon{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .15s,box-shadow .15s}
+  .nav-item.active .nav-icon{background:#FF4400;box-shadow:0 0 20px rgba(255,68,0,.5)}
+  .nav-icon svg{width:18px;height:18px;stroke:#444;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .nav-item.active .nav-icon svg{stroke:#fff;stroke-width:2}
+  .modal-bd{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:none;align-items:flex-end;z-index:100}
+  .modal-bd.show{display:flex}
+  .modal{width:100%;background:#0C0C0C;border-top:1px solid #222;border-radius:24px 24px 0 0;padding:24px 20px 30px;max-height:85vh;overflow-y:auto;animation:up .25s cubic-bezier(.34,1.3,.5,1)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-title{display:flex;justify-content:space-between;align-items:center;font-family:'Doto',monospace;font-size:14px;font-weight:800;letter-spacing:1.6px;color:#fff;margin-bottom:20px}
+  .modal-x{width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;font-size:20px}
+  .modal-lbl{font-family:'Doto',monospace;font-size:9px;font-weight:700;letter-spacing:1.4px;color:#666;margin:16px 0 8px;text-transform:uppercase}
+  .modal-input{width:100%;background:#161616;border:1px solid #222;border-radius:12px;padding:14px 16px;color:#E8E6E3;font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;margin-bottom:4px}
+  .modal-input:focus{border-color:#FF4400}
+  .row2{display:flex;gap:10px}
+  .row2 .modal-input{margin-bottom:0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:8px 12px;border-radius:999px;background:#161616;border:1px solid #222;color:#888;font-family:'Doto',monospace;font-size:10px;font-weight:800;letter-spacing:1.2px;cursor:pointer}
+  .chip.active{background:rgba(255,68,0,.12);border-color:#FF4400;color:#FF4400}
+  .modal-actions{display:flex;gap:10px;margin-top:24px}
+  .modal-actions .btn{flex:1;font-size:12px}
+  .modal-cancel{background:#161616;color:#888;border:1px solid #222}
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:#161616;border:1px solid #333;color:#E8E6E3;padding:12px 20px;border-radius:999px;font-family:'Doto',monospace;font-size:11px;font-weight:700;letter-spacing:1px;opacity:0;transition:all .3s cubic-bezier(.34,1.4,.5,1);z-index:200;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .sw-months{font-family:'Doto',monospace;font-size:9px;font-weight:700;color:#666;letter-spacing:1px;margin-bottom:6px}
+  .placeholder{text-align:center;padding:40px 20px;color:#444;font-family:'Doto',monospace;font-size:11px;letter-spacing:1.5px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="screens">
+    <div class="screen active" id="scr-dash">
+      <div class="hdr">
+        <div class="brand">FLOW</div>
+        <div class="clock"><div class="dot"></div><span id="live-clock">--:-- --</span></div>
+      </div>
+      <div class="greet-l1" id="greet-line">GOOD AFTERNOON</div>
+      <div class="greet-l2" id="greet-sub">Welcome back. <span class="dim">Let's begin.</span></div>
+      <div class="card">
+        <div class="card-hdr"><span class="idx">01</span><span class="idx-l">TODAY</span></div>
+        <div class="today-row">
+          <div class="today-l">
+            <div class="today-num" id="today-num">0<span class="u">H</span> 00<span class="u">M</span></div>
+            <div class="today-meta">
+              <strong id="today-pct">0%</strong>
+              <span class="goal-tag" id="today-goal-tag">GOAL 4H</span>
+            </div>
+          </div>
+          <div class="ring">
+            <svg viewBox="0 0 78 78">
+              <circle cx="39" cy="39" r="34" fill="none" stroke="#161616" stroke-width="4"/>
+              <circle id="ring-fill" cx="39" cy="39" r="34" fill="none" stroke="#FF4400" stroke-width="4" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
+            </svg>
+            <div class="ring-inner">
+              <div class="ring-pct" id="ring-pct">0%</div>
+              <div class="ring-lbl">GOAL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="card-hdr" style="margin-bottom:10px"><span class="idx">02</span><span class="idx-l">SIGNAL</span></div>
+          <div class="stat-num" id="stat-signal">0</div>
+          <div class="stat-sub">DAYS</div>
+          <div class="stat-foot" id="stat-signal-foot">READY</div>
+        </div>
+        <div class="stat-card">
+          <div class="card-hdr" style="margin-bottom:10px"><span class="idx">03</span><span class="idx-l">TASKS</span></div>
+          <div class="stat-num" id="stat-tasks">0/0</div>
+          <div class="stat-sub">DONE</div>
+          <div class="stat-foot" id="stat-tasks-foot">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="idx">04</span><span class="idx-l">HOURS</span></div>
+        <div class="hours" id="hours-bar"></div>
+        <div class="hour-lbls" id="hour-lbls"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="idx">05</span><span class="idx-l">THIS WEEK</span></div>
+        <svg class="week-chart" viewBox="0 0 320 100" preserveAspectRatio="none" id="week-chart"></svg>
+        <div class="day-lbls" id="week-lbls"></div>
+      </div>
+      <div class="session-card">
+        <div class="session-hdr">
+          <div class="session-tag"><span class="idx hot">06</span><span>STOPWATCH</span></div>
+          <div class="status"><div class="status-dot"></div><span id="sw-status">READY</span></div>
+        </div>
+        <div class="session-time" id="sw-time">00<span class="colon">:</span>00<span style="font-size:18px;color:#444;margin-left:6px">.00</span></div>
+        <div class="sw-bar">
+          <div class="sw-info"><strong>COUNTING UP</strong><br><span id="sw-sub">TAP PLAY TO START</span></div>
+          <button class="play-btn" id="sw-toggle"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-timer">
+      <div class="hdr">
+        <div class="brand">POMODORO</div>
+        <div class="clock"><div class="dot"></div><span id="timer-status">ARMED</span></div>
+      </div>
+      <div class="mode-tabs">
+        <div class="mode-tab active" data-mode="work">FOCUS</div>
+        <div class="mode-tab" data-mode="short">SHORT</div>
+        <div class="mode-tab" data-mode="long">LONG</div>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-mode" id="timer-mode-label">FOCUS · LAP 01</div>
+        <div class="timer-big" id="timer-big">40:00</div>
+        <div class="lap-lbl">LAPS COMPLETED <strong id="laps-count">0</strong></div>
+        <div class="pomo-dots" id="pomo-dots"></div>
+      </div>
+      <div class="timer-controls">
+        <button class="btn btn-ghost" id="timer-reset">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
+        <button class="btn btn-primary" id="timer-toggle">START FOCUS</button>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-tasks">
+      <div class="hdr">
+        <div class="brand">TASKS</div>
+        <div class="clock"><span id="tasks-count-lbl">0 / 0</span></div>
+      </div>
+      <div class="top-add" id="add-task-btn"><span class="plus">+</span><span>ADD TASK</span><span class="sub">GROUP · REPEAT</span></div>
+      <div id="groups-list"></div>
+      <div class="new-grp" id="new-group-btn"><span style="font-size:16px">+</span><span>NEW GROUP</span></div>
+    </div>
+
+    <div class="screen" id="scr-analytics">
+      <div class="hdr">
+        <div class="brand">ANALYTICS</div>
+        <div class="clock"><div class="dot"></div><span>LIVE</span></div>
+      </div>
+      <div class="range-tabs">
+        <div class="range-tab" data-range="day">DAY</div>
+        <div class="range-tab active" data-range="week">WEEK</div>
+        <div class="range-tab" data-range="month">MONTH</div>
+        <div class="range-tab" data-range="all">ALL</div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="idx">01</span><span class="idx-l">COMPARE</span></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#FF4400"></div>CURRENT</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#444"></div>PREVIOUS</div>
+        </div>
+        <svg class="week-chart" viewBox="0 0 320 108" preserveAspectRatio="none" id="compare-chart"></svg>
+      </div>
+      <div class="metric-grid" id="metrics"></div>
+      <div class="card">
+        <div class="card-hdr"><span class="idx">02</span><span class="idx-l">PEAK HOURS</span></div>
+        <svg class="week-chart" viewBox="0 0 320 80" preserveAspectRatio="none" id="peak-chart" style="height:70px"></svg>
+        <div class="day-lbls" style="padding-top:6px"><span>12A</span><span>6A</span><span>12P</span><span>6P</span><span>11P</span></div>
+      </div>
+      <div class="sec-lbl">PERSONAL RECORDS</div>
+      <div class="card"><div class="records" id="records"></div></div>
+    </div>
+
+    <div class="screen" id="scr-settings">
+      <div class="hdr">
+        <div class="brand">SETTINGS</div>
+        <div class="clock"><span>v1.0</span></div>
+      </div>
+      <div class="sec-lbl">YOU</div>
+      <div class="card">
+        <div class="set-row" data-set="user_name">
+          <div class="set-lbl">Your name</div>
+          <div class="set-val" id="sv-name">— NOT SET</div>
+        </div>
+      </div>
+      <div class="sec-lbl">THEME</div>
+      <div class="card"><div class="theme-list" id="theme-list"></div></div>
+      <div class="sec-lbl">POMODORO</div>
+      <div class="card">
+        <div class="set-row" data-set="work_minutes">
+          <div class="set-lbl">Work duration</div>
+          <div class="set-val" id="sv-work">40 MIN</div>
+        </div>
+        <div class="set-row" data-set="long_break_after">
+          <div class="set-lbl">Long break after</div>
+          <div class="set-val" id="sv-long">4 LAPS</div>
+        </div>
+      </div>
+      <div class="sec-lbl">GOAL</div>
+      <div class="card">
+        <div class="set-row" data-set="goal_minutes">
+          <div class="set-lbl">Daily minutes</div>
+          <div class="set-val" id="sv-goal">240 MIN</div>
+        </div>
+      </div>
+      <div class="sec-lbl">DATA</div>
+      <div class="card">
+        <div class="set-row" id="reset-btn">
+          <div class="set-lbl" style="color:#FF4400">Reset all data</div>
+          <div class="set-val">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-item active" data-scr="scr-dash">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2z"/></svg></div>
+    </div>
+    <div class="nav-item" data-scr="scr-timer">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+    </div>
+    <div class="nav-item" data-scr="scr-tasks">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+    </div>
+    <div class="nav-item" data-scr="scr-analytics">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></div>
+    </div>
+    <div class="nav-item" data-scr="scr-settings">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bd" id="modal-bd"><div class="modal" id="modal-content"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ STORAGE ============
+const DB = {
+  get(k,d){try{const v=localStorage.getItem('flow_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){localStorage.setItem('flow_'+k,JSON.stringify(v))},
+  del(k){localStorage.removeItem('flow_'+k)}
+};
+const now = () => new Date();
+const pad = n => String(n).padStart(2,'0');
+const dayKey = ts => {const d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const todayKey = () => dayKey(Date.now());
+
+// ============ STATE ============
+let state = {
+  settings: Object.assign({
+    user_name:'',
+    theme:0,
+    work_minutes:40,
+    long_break_after:4,
+    goal_minutes:240
+  }, DB.get('settings',{})),
+  tasks: DB.get('tasks',[]),
+  groups: DB.get('groups',[]),
+  minutesLog: DB.get('minutes_log',{}),
+  sessionsLog: DB.get('sessions_log',{}),
+  hourLog: DB.get('hour_log',{}),
+  streak: DB.get('streak',0),
+  bestStreak: DB.get('best_streak',0),
+  lastActive: DB.get('last_active',''),
+  todayMinutes: DB.get('today_minutes',0),
+  todayKey: DB.get('today_key',''),
+  pomoLaps: DB.get('pomo_laps',0),
+  swElapsed: DB.get('sw_elapsed_ms',0),
+  swRunning: DB.get('sw_running',false),
+  swStartedAt: DB.get('sw_started_at',0),
+  timer: {
+    mode: 'work',
+    running: false,
+    remainingSec: 40*60,
+    startedAt: null,
+    lapIndex: 0
+  }
+};
+
+// Roll over day
+function rollDay(){
+  const tk = todayKey();
+  if (state.todayKey !== tk){
+    state.todayKey = tk;
+    state.todayMinutes = 0;
+    state.tasks.forEach(t => {if (t.done && t.repeat === 'DAILY') t.done = false});
+    save();
+  }
+}
+
+function save(){
+  DB.set('settings', state.settings);
+  DB.set('tasks', state.tasks);
+  DB.set('groups', state.groups);
+  DB.set('minutes_log', state.minutesLog);
+  DB.set('sessions_log', state.sessionsLog);
+  DB.set('hour_log', state.hourLog);
+  DB.set('streak', state.streak);
+  DB.set('best_streak', state.bestStreak);
+  DB.set('last_active', state.lastActive);
+  DB.set('today_minutes', state.todayMinutes);
+  DB.set('today_key', state.todayKey);
+  DB.set('pomo_laps', state.pomoLaps);
+  DB.set('sw_elapsed_ms', state.swElapsed);
+  DB.set('sw_running', state.swRunning);
+  DB.set('sw_started_at', state.swStartedAt);
+}
+
+function addMinutes(m, countSession){
+  if (m<=0 && !countSession) return;
+  rollDay();
+  if (m>0){
+    state.todayMinutes += m;
+    const tk = todayKey();
+    state.minutesLog[tk] = (state.minutesLog[tk]||0) + m;
+    if (state.lastActive !== tk){
+      const y = dayKey(Date.now()-86400000);
+      state.streak = (state.lastActive === y) ? state.streak+1 : 1;
+      state.lastActive = tk;
+      if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    }
+  }
+  if (countSession){
+    const tk = todayKey();
+    state.sessionsLog[tk] = (state.sessionsLog[tk]||0) + 1;
+    const h = now().getHours();
+    state.hourLog[h] = (state.hourLog[h]||0) + 1;
+  }
+  save();
+}
+
+// ============ THEMES ============
+const THEMES = [
+  {name:'DEERFLOW', bg:'#050505', surface:'#0C0C0C', accent:'#FF4400', text:'#E8E6E3', muted:'#888', line:'#161616'},
+  {name:'PAPER', bg:'#F1EEE7', surface:'#FFFFFF', accent:'#E85D2C', text:'#16161A', muted:'#6F6E68', line:'#DDD8CD'},
+  {name:'MIDNIGHT', bg:'#070B14', surface:'#0F1520', accent:'#5B8DEF', text:'#E8EEF7', muted:'#8896AA', line:'#1E2A3E'}
+];
+
+function applyTheme(){
+  const t = THEMES[state.settings.theme] || THEMES[0];
+  document.documentElement.style.setProperty('--bg', t.bg);
+  document.documentElement.style.setProperty('--surface', t.surface);
+  document.documentElement.style.setProperty('--accent', t.accent);
+  document.documentElement.style.setProperty('--text', t.text);
+  document.documentElement.style.setProperty('--muted', t.muted);
+  document.documentElement.style.setProperty('--line', t.line);
+  document.body.style.background = t.bg;
+  document.querySelectorAll('.card,.stat-card,.session-card,.grp,.metric').forEach(el=>{el.style.background=t.surface;el.style.borderColor=t.line});
+  document.querySelectorAll('.brand,.stat-num,.today-num,.metric-val,.grp-name,.set-lbl,.theme-nm,.modal-title,.task-title,.rec-lbl').forEach(el=>el.style.color=t.text);
+  document.querySelectorAll('.mode-tab,.range-tab,.chip,.goal-tag').forEach(el=>{el.style.background=t.surface;el.style.borderColor=t.line;el.style.color=t.muted});
+  document.querySelectorAll('.mode-tab.active,.range-tab.active').forEach(el=>{el.style.background=t.accent;el.style.color='#fff'});
+  document.querySelectorAll('.nav-icon svg').forEach(el=>el.style.stroke=t.muted);
+  document.querySelectorAll('.nav-item.active .nav-icon svg').forEach(el=>el.style.stroke='#fff');
+  document.querySelectorAll('.idx.hot,.today-meta strong,.stat-foot,.metric-delta,.lap-lbl strong,.sw-info strong,.legend-dot[style*="FF4400"],.top-add,.sec-lbl,.greet-l2 .dim,.set-val,.ring-pct').forEach(el=>el.style.color=t.accent);
+  document.querySelectorAll('.today-meta strong,.metric-delta').forEach(el=>el.style.color=t.accent);
+  document.querySelectorAll('.greet-l2').forEach(el=>el.style.color=t.text);
+  document.querySelectorAll('.greet-l2 .dim').forEach(el=>el.style.color=t.muted);
+  document.querySelectorAll('.top-add').forEach(el=>{el.style.borderColor=t.accent;el.style.color=t.accent;el.style.background=t.accent+'10'});
+  document.querySelectorAll('.top-add .sub').forEach(el=>el.style.color=t.accent+'99');
+  document.querySelectorAll('.btn-primary').forEach(el=>{el.style.background=t.accent;el.style.boxShadow='0 0 30px '+t.accent+'66'});
+  document.querySelectorAll('.play-btn').forEach(el=>{el.style.background=t.accent;el.style.boxShadow='0 0 24px '+t.accent+'80'});
+  document.querySelectorAll('.session-time .colon,.timer-big').forEach(el=>el.style.color=t.accent);
+  document.querySelectorAll('.idx-l,.stat-sub,.hour-lbls span,.sw-info,.session-tag,.status,.card-hdr .idx').forEach(el=>el.style.color=t.muted);
+  document.querySelectorAll('.greet-l1').forEach(el=>el.style.color=t.muted);
+  document.querySelectorAll('.clock').forEach(el=>el.style.color=t.muted);
+  document.querySelectorAll('.dot,.status-dot').forEach(el=>{el.style.background=t.accent;el.style.boxShadow='0 0 8px '+t.accent+'e6'});
+  document.querySelectorAll('.ring circle').forEach(el=>el.style.stroke=t.line);
+  const rf = document.getElementById('ring-fill'); if (rf) rf.style.stroke = t.accent;
+  document.querySelectorAll('.hour-seg .fill').forEach(el=>el.style.background=t.text);
+  document.querySelectorAll('.task-row.done .cb').forEach(el=>{el.style.background=t.accent;el.style.borderColor=t.accent});
+  document.querySelectorAll('.pomo-dot.done').forEach(el=>{el.style.background=t.text;el.style.borderColor=t.text});
+  document.querySelectorAll('.pomo-dot.curr').forEach(el=>{el.style.borderColor=t.accent;el.style.boxShadow='0 0 10px '+t.accent+'99'});
+  document.querySelectorAll('.theme-opt.active .theme-radio').forEach(el=>{el.style.borderColor=t.accent});
+  document.querySelectorAll('.theme-opt.active .theme-radio::after').forEach(el=>el.style.background=t.accent);
+  document.querySelectorAll('.nav-item.active .nav-icon').forEach(el=>{el.style.background=t.accent;el.style.boxShadow='0 0 20px '+t.accent+'80'});
+  document.querySelectorAll('.grp-dot').forEach(el=>el.style.background=t.accent);
+  document.body.style.color = t.text;
+}
+
+// ============ RENDER ============
+function fmtStopwatch(ms){
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60, cs = Math.floor((ms%1000)/10);
+  if (h>0) return pad(h)+':'+pad(m)+':'+pad(sec)+'.'+pad(cs);
+  return pad(m)+':'+pad(sec)+'.'+pad(cs);
+}
+function fmtClock12(d){
+  const p = d.getHours()<12?'AM':'PM';
+  let h = d.getHours()%12; if(h===0)h=12;
+  return h+':'+pad(d.getMinutes())+' '+p;
+}
+function greetPeriod(){
+  const h = now().getHours();
+  if (h<5) return 'LATE NIGHT';
+  if (h<12) return 'GOOD MORNING';
+  if (h<18) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+}
+
+function renderDash(){
+  rollDay();
+  document.getElementById('live-clock').textContent = fmtClock12(now());
+  const name = state.settings.user_name;
+  document.getElementById('greet-line').textContent = greetPeriod() + (name ? ', '+name.toUpperCase() : '');
+  const greet = state.streak>0 ? state.streak+' day'+(state.streak>1?'s':'')+' strong. <span class="dim">Keep it going.</span>' : (name? 'Welcome back, '+name+'. <span class="dim">Let\'s begin.</span>' : 'Welcome. <span class="dim">Let\'s begin.</span>');
+  document.getElementById('greet-sub').innerHTML = greet;
+
+  const today = state.todayMinutes, goal = state.settings.goal_minutes;
+  const pct = goal>0 ? Math.min(100, Math.round(today/goal*100)) : 0;
+  document.getElementById('today-num').innerHTML = Math.floor(today/60)+'<span class="u">H</span> '+pad(today%60)+'<span class="u">M</span>';
+  document.getElementById('today-pct').textContent = pct+'%';
+  document.getElementById('today-goal-tag').textContent = 'GOAL '+Math.floor(goal/60)+'H';
+  document.getElementById('ring-pct').textContent = pct+'%';
+  const rf = document.getElementById('ring-fill');
+  rf.style.strokeDashoffset = 213.6*(1-pct/100);
+
+  document.getElementById('stat-signal').textContent = state.streak;
+  document.getElementById('stat-signal-foot').textContent = state.streak>0?'ACTIVE':'READY';
+  const done = state.tasks.filter(t=>t.done).length, total = state.tasks.length;
+  document.getElementById('stat-tasks').textContent = done+'/'+total;
+  document.getElementById('stat-tasks-foot').textContent = total>0?Math.round(done/total*100)+'%':'—';
+
+  const hb = document.getElementById('hours-bar'); hb.innerHTML='';
+  const hl = document.getElementById('hour-lbls'); hl.innerHTML='';
+  for (let i=0;i<8;i++){
+    const base = i*30, top = (i+1)*30;
+    let cls = 'hour-seg';
+    if (today>=top) cls += ' s-full';
+    else if (today>base) cls += ' s-half';
+    else cls += ' s-empty';
+    const seg = document.createElement('div'); seg.className = cls;
+    const f = document.createElement('div'); f.className = 'fill';
+    if (cls.includes('s-half')) f.style.transform = 'scaleY(1)';
+    else if (cls.includes('s-full')) f.style.transform = 'scaleY(1)';
+    else f.style.transform = 'scaleY(0)';
+    seg.appendChild(f); hb.appendChild(seg);
+    const lbl = document.createElement('span'); lbl.textContent = base+':00';
+    if (today>=top) lbl.className='on';
+    if (i===Math.floor(today/30) && today>0) lbl.className='act';
+    hl.appendChild(lbl);
+  }
+
+  // Week chart
+  const svg = document.getElementById('week-chart'); svg.innerHTML='';
+  const data = [];
+  for (let i=6;i>=0;i--){
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+    data.push(i===0? today : (state.minutesLog[dayKey(d.getTime())]||0));
+  }
+  const maxV = Math.max(1, ...data);
+  const stepX = 320/6;
+  const pts = data.map((v,i)=>({x:i*stepX, y: 100 - 15 - (v/maxV)*70}));
+  // Dashed line
+  for (let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1];
+    const dist = Math.hypot(b.x-a.x, b.y-a.y), steps = Math.floor(dist/6);
+    const dx=(b.x-a.x)/steps, dy=(b.y-a.y)/steps;
+    for (let s=0;s<steps;s++){
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', a.x+s*dx); c.setAttribute('cy', a.y+s*dy); c.setAttribute('r','1.2'); c.setAttribute('fill','#333');
+      svg.appendChild(c);
+    }
+  }
+  pts.forEach((p,i)=>{
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    const isLast = i===pts.length-1;
+    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',isLast?'4':'3');
+    c.setAttribute('fill','#FF4400'); svg.appendChild(c);
+    if (isLast){
+      const o=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      o.setAttribute('cx',p.x); o.setAttribute('cy',p.y); o.setAttribute('r','6.5');
+      o.setAttribute('fill','none'); o.setAttribute('stroke','#FF4400'); o.setAttribute('stroke-width','1.2');
+      svg.appendChild(o);
+    }
+  });
+  const wl = document.getElementById('week-lbls'); wl.innerHTML='';
+  const days = ['M','T','W','T','F','S','S'];
+  for (let i=0;i<7;i++){
+    const s = document.createElement('span');
+    const d = new Date(); d.setDate(d.getDate()-(6-i));
+    s.textContent = days[d.getDay()===0?6:d.getDay()-1];
+    if (i===6) s.className='today';
+    wl.appendChild(s);
+  }
+
+  renderStopwatchCard();
+}
+
+function renderStopwatchCard(){
+  const live = state.swRunning ? state.swElapsed + (Date.now()-state.swStartedAt) : state.swElapsed;
+  const ms = Math.floor(live);
+  const parts = fmtStopwatch(ms).split('.');
+  document.getElementById('sw-time').innerHTML = parts[0].replace(/:/g,'<span class="colon">:</span>') + '<span style="font-size:18px;color:#444;margin-left:6px">.'+parts[1]+'</span>';
+  const st = document.getElementById('sw-status');
+  const sub = document.getElementById('sw-sub');
+  if (state.swRunning){st.textContent='RUNNING'; sub.textContent='STARTED '+fmtClock12(new Date(state.swStartedAt))}
+  else if (state.swElapsed>0){st.textContent='PAUSED'; sub.textContent='PAUSED AT '+fmtClock12(new Date())}
+  else {st.textContent='READY'; sub.textContent='TAP PLAY TO START'}
+  const btn = document.getElementById('sw-toggle');
+  btn.innerHTML = state.swRunning ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+}
+
+function renderTimer(){
+  const t = state.timer;
+  const modes = {work:'FOCUS', short:'SHORT BREAK', long:'LONG BREAK'};
+  const lapNum = (t.lapIndex % state.settings.long_break_after) + 1;
+  document.getElementById('timer-mode-label').textContent = modes[t.mode] + ' · LAP ' + pad(lapNum);
+  const m = Math.floor(t.remainingSec/60), s = t.remainingSec%60;
+  document.getElementById('timer-big').textContent = pad(m)+':'+pad(s);
+  document.getElementById('laps-count').textContent = state.pomoLaps;
+  document.getElementById('timer-status').textContent = t.running?'RUNNING':'ARMED';
+  document.querySelectorAll('.mode-tab').forEach(el=>el.classList.toggle('active', el.dataset.mode===t.mode));
+  const dots = document.getElementById('pomo-dots'); dots.innerHTML='';
+  for (let i=0;i<state.settings.long_break_after;i++){
+    const d = document.createElement('div'); d.className='pomo-dot';
+    if (i < t.lapIndex) d.classList.add('done');
+    else if (i === t.lapIndex) d.classList.add('curr');
+    dots.appendChild(d);
+  }
+  document.getElementById('timer-toggle').textContent = t.running?'PAUSE':(t.mode==='work'?'START FOCUS':'START BREAK');
+}
+
+function renderTasks(){
+  const done = state.tasks.filter(t=>t.done).length;
+  document.getElementById('tasks-count-lbl').textContent = done+' / '+state.tasks.length;
+  const list = document.getElementById('groups-list'); list.innerHTML='';
+  const order = ['NONE', ...state.groups];
+  order.forEach(g=>{
+    const idxs = [];
+    state.tasks.forEach((t,i)=>{if (t.group===g) idxs.push(i)});
+    if (idxs.length===0 && g!=='NONE') return;
+    const card = document.createElement('div'); card.className='grp';
+    const dc = idxs.filter(i=>state.tasks[i].done).length;
+    let html = '<div class="grp-hdr"><div class="grp-l"><div class="grp-dot"></div><div class="grp-name">'+g+'</div></div><div class="grp-count">'+dc+'/'+idxs.length+'</div></div>';
+    if (idxs.length===0) html += '<div class="grp-empty">EMPTY</div>';
+    else html += idxs.map(i=>{
+      const t = state.tasks[i];
+      return '<div class="task-row'+(t.done?' done':'')+'" data-i="'+i+'">'+
+        '<div class="cb" data-act="toggle" data-i="'+i+'">'+(t.done?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':'')+'</div>'+
+        '<div class="task-title">'+t.title+'</div>'+
+        '<div class="task-del" data-act="del" data-i="'+i+'">×</div>'+
+        '</div>';
+    }).join('');
+    html += '<div class="grp-add" data-add="'+g+'"><span>+</span><span>ADD TASK</span></div>';
+    card.innerHTML = html;
+    card.querySelectorAll('[data-act]').forEach(el=>{
+      el.onclick = e => {
+        e.stopPropagation();
+        const i = parseInt(el.dataset.i);
+        if (el.dataset.act==='toggle'){ state.tasks[i].done = !state.tasks[i].done; save(); renderAll(); }
+        else if (el.dataset.act==='del'){ state.tasks.splice(i,1); save(); renderAll(); }
+      };
+    });
+    card.querySelector('[data-add]').onclick = () => openAddTask(g);
+    list.appendChild(card);
+  });
+}
+
+function renderAnalytics(){
+  // Range data
+  const range = document.querySelector('.range-tab.active').dataset.range;
+  let cur = [], prev = [], labels = [];
+  const nowD = now();
+  if (range==='day'){
+    const h = nowD.getHours();
+    for (let i=0;i<24;i++){
+      cur.push(i===h? state.todayMinutes : 0);
+      prev.push(0);
+      labels.push(i%6===0?(i===0?'12A':i===12?'12P':(i>12?i-12+'P':i+'A')):'');
+    }
+  } else if (range==='week'){
+    for (let i=6;i>=0;i--){
+      const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+      cur.push(i===0?state.todayMinutes:(state.minutesLog[dayKey(d.getTime())]||0));
+      const d2 = new Date(d); d2.setDate(d2.getDate()-7);
+      prev.push(state.minutesLog[dayKey(d2.getTime())]||0);
+    }
+    labels = ['M','T','W','T','F','S','S'];
+  } else if (range==='month'){
+    for (let i=3;i>=0;i--){
+      let sum=0, sumP=0;
+      for (let j=0;j<7;j++){
+        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(i*7+j));
+        sum += i===0 && j===0? state.todayMinutes : (state.minutesLog[dayKey(d.getTime())]||0);
+        const d2 = new Date(d); d2.setDate(d2.getDate()-28);
+        sumP += state.minutesLog[dayKey(d2.getTime())]||0;
+      }
+      cur.push(sum); prev.push(sumP);
+    }
+    labels = ['W1','W2','W3','W4'];
+  } else {
+    for (let i=11;i>=0;i--){
+      let sum=0;
+      for (let j=0;j<7;j++){
+        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(i*7+j));
+        sum += i===0 && j===0? state.todayMinutes : (state.minutesLog[dayKey(d.getTime())]||0);
+      }
+      cur.push(sum); prev.push(0);
+    }
+    labels = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+  }
+
+  // Compare chart
+  const svg = document.getElementById('compare-chart'); svg.innerHTML='';
+  const maxV = Math.max(1, ...cur, ...prev);
+  const stepX = 320/Math.max(1, cur.length-1);
+  const toPts = arr => arr.map((v,i)=>({x:i*stepX, y: 108 - 12 - (v/maxV)*84}));
+  const pPts = toPts(prev), cPts = toPts(cur);
+  // Prev line (grey dashed)
+  for (let i=0;i<pPts.length-1;i++){
+    const a=pPts[i], b=pPts[i+1];
+    const dist=Math.hypot(b.x-a.x,b.y-a.y), steps=Math.floor(dist/6)||1;
+    const dx=(b.x-a.x)/steps, dy=(b.y-a.y)/steps;
+    for (let s=0;s<steps;s++){
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',a.x+s*dx); c.setAttribute('cy',a.y+s*dy); c.setAttribute('r','1'); c.setAttribute('fill','#333');
+      svg.appendChild(c);
+    }
+  }
+  pPts.forEach(p=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','2.2');c.setAttribute('fill','#333');svg.appendChild(c)});
+  // Current line (orange)
+  for (let i=0;i<cPts.length-1;i++){
+    const a=cPts[i], b=cPts[i+1];
+    const dist=Math.hypot(b.x-a.x,b.y-a.y), steps=Math.floor(dist/6)||1;
+    const dx=(b.x-a.x)/steps, dy=(b.y-a.y)/steps;
+    for (let s=0;s<steps;s++){
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',a.x+s*dx); c.setAttribute('cy',a.y+s*dy); c.setAttribute('r','1.2'); c.setAttribute('fill','#FF4400');
+      svg.appendChild(c);
+    }
+  }
+  cPts.forEach(p=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','2.8');c.setAttribute('fill','#FF4400');svg.appendChild(c)});
+
+  const total = cur.reduce((a,b)=>a+b,0), totalP = prev.reduce((a,b)=>a+b,0);
+  const totalSess = Object.values(state.sessionsLog).reduce((a,b)=>a+b,0);
+  const activeBuckets = cur.filter(v=>v>0).length;
+  const avg = activeBuckets>0?Math.floor(total/activeBuckets):0;
+  const mg = document.getElementById('metrics'); mg.innerHTML = '';
+  const metrics = [
+    ['TOTAL MIN', total],
+    ['SESSIONS', totalSess],
+    ['TASKS DONE', state.tasks.filter(t=>t.done).length],
+    ['AVG / ACTIVE', avg]
+  ];
+  metrics.forEach(([l,v])=>{
+    const d = document.createElement('div'); d.className='metric';
+    d.innerHTML = '<div class="metric-lbl">'+l+'</div><div class="metric-val">'+v+'</div>' + (total>totalP?'<div class="metric-delta">▲ +'+(total-totalP)+'</div>':'');
+    mg.appendChild(d);
+  });
+
+  // Peak hours
+  const ps = document.getElementById('peak-chart'); ps.innerHTML='';
+  const hourBuckets = new Array(24).fill(0);
+  Object.entries(state.hourLog).forEach(([k,v])=>{const i=parseInt(k);if(i>=0&&i<24)hourBuckets[i]=v});
+  const maxH = Math.max(1, ...hourBuckets);
+  const bw = 320/24;
+  hourBuckets.forEach((v,i)=>{
+    const h = (v/maxH)*70;
+    if (h>1){
+      const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x', i*bw+1); r.setAttribute('y', 80-h-2); r.setAttribute('width', bw-2); r.setAttribute('height', h);
+      r.setAttribute('fill','#FF4400'); r.setAttribute('rx','2');
+      ps.appendChild(r);
+    }
+  });
+
+  // Records
+  const bestDay = Math.max(0, ...Object.values(state.minutesLog), state.todayMinutes);
+  const rec = document.getElementById('records');
+  rec.innerHTML = [
+    ['LONGEST STREAK', state.bestStreak+' DAYS'],
+    ['BEST DAY', bestDay+' MIN'],
+    ['TOTAL SESSIONS', totalSess],
+    ['TASKS DONE', state.tasks.filter(t=>t.done).length]
+  ].map(([l,v])=>'<div class="rec"><div class="rec-lbl">'+l+'</div><div class="rec-val">'+v+'</div></div>').join('');
+}
+
+function renderSettings(){
+  document.getElementById('sv-name').textContent = state.settings.user_name || '— NOT SET';
+  document.getElementById('sv-work').textContent = state.settings.work_minutes + ' MIN';
+  document.getElementById('sv-long').textContent = state.settings.long_break_after + ' LAPS';
+  document.getElementById('sv-goal').textContent = state.settings.goal_minutes + ' MIN';
+  const tl = document.getElementById('theme-list'); tl.innerHTML='';
+  THEMES.forEach((th,i)=>{
+    const d = document.createElement('div');
+    d.className = 'theme-opt' + (state.settings.theme===i?' active':'');
+    d.innerHTML = '<div class="theme-radio"></div><div class="swatch" style="background:'+th.bg+';border:1px solid '+th.accent+'"></div><div class="theme-nm">'+th.name+'</div>';
+    d.onclick = () => { state.settings.theme = i; save(); applyTheme(); renderSettings(); toast('Theme: '+th.name); };
+    tl.appendChild(d);
+  });
+}
+
+function renderAll(){
+  applyTheme();
+  renderDash();
+  renderTimer();
+  renderTasks();
+  renderAnalytics();
+  renderSettings();
+}
+
+// ============ MODALS ============
+function showModal(html){
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-bd').classList.add('show');
+}
+function hideModal(){ document.getElementById('modal-bd').classList.remove('show'); }
+document.getElementById('modal-bd').onclick = e => { if (e.target.id==='modal-bd') hideModal(); };
+
+let toastTimer;
+function toast(m){
+  const el = document.getElementById('toast');
+  el.textContent = m; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+function openAddTask(preset){
+  const groupChips = ['NONE', ...state.groups].map(g=>'<div class="chip'+(g===(preset||'NONE')?' active':'')+'" data-g="'+g+'">'+g+'</div>').join('');
+  showModal(`
+    <div class="modal-title">NEW TASK<span class="modal-x" onclick="hideModal()">×</span></div>
+    <input class="modal-input" id="m-title" placeholder="What needs to be done?" autofocus>
+    <div class="modal-lbl">GROUP</div>
+    <div class="chips" id="m-groups">${groupChips}</div>
+    <div class="modal-lbl">REPEAT</div>
+    <div class="chips" id="m-repeats">
+      <div class="chip active" data-r="NONE">NONE</div>
+      <div class="chip" data-r="DAILY">DAILY</div>
+      <div class="chip" data-r="WEEKLY">WEEKLY</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn modal-cancel" onclick="hideModal()">CANCEL</button>
+      <button class="btn btn-primary" id="m-save">ADD TASK</button>
+    </div>
+  `);
+  let selG = preset || 'NONE', selR = 'NONE';
+  document.querySelectorAll('#m-groups .chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('#m-groups .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');selG=c.dataset.g});
+  document.querySelectorAll('#m-repeats .chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('#m-repeats .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');selR=c.dataset.r});
+  document.getElementById('m-save').onclick = () => {
+    const title = document.getElementById('m-title').value.trim();
+    if (!title) return toast('Enter a title');
+    state.tasks.push({title, group:selG, repeat:selR, done:false});
+    save(); hideModal(); renderAll(); toast('Task added');
+  };
+  setTimeout(()=>document.getElementById('m-title').focus(),100);
+}
+
+function openNewGroup(){
+  showModal(`
+    <div class="modal-title">NEW GROUP<span class="modal-x" onclick="hideModal()">×</span></div>
+    <input class="modal-input" id="m-gname" placeholder="Group name (WORK, STUDY...)" autofocus>
+    <div class="modal-actions">
+      <button class="btn modal-cancel" onclick="hideModal()">CANCEL</button>
+      <button class="btn btn-primary" id="m-gsave">CREATE</button>
+    </div>
+  `);
+  document.getElementById('m-gsave').onclick = () => {
+    const n = document.getElementById('m-gname').value.trim().toUpperCase();
+    if (!n || state.groups.includes(n)) return toast('Invalid or duplicate');
+    state.groups.push(n); save(); hideModal(); renderAll(); toast('Group created');
+  };
+  setTimeout(()=>document.getElementById('m-gname').focus(),100);
+}
+
+function openEditSetting(key){
+  const cfg = {
+    user_name: {label:'YOUR NAME', type:'text', val: state.settings.user_name},
+    work_minutes: {label:'WORK DURATION (MIN)', type:'number', min:5, max:180, val: state.settings.work_minutes},
+    long_break_after: {label:'LONG BREAK AFTER (LAPS)', type:'number', min:2, max:10, val: state.settings.long_break_after},
+    goal_minutes: {label:'DAILY GOAL (MIN)', type:'number', min:30, max:960, val: state.settings.goal_minutes}
+  }[key];
+  if (!cfg) return;
+  showModal(`
+    <div class="modal-title">${cfg.label}<span class="modal-x" onclick="hideModal()">×</span></div>
+    <input class="modal-input" id="m-val" type="${cfg.type}" value="${cfg.val}">
+    <div class="modal-actions">
+      <button class="btn modal-cancel" onclick="hideModal()">CANCEL</button>
+      <button class="btn btn-primary" id="m-save">SAVE</button>
+    </div>
+  `);
+  document.getElementById('m-save').onclick = () => {
+    const raw = document.getElementById('m-val').value;
+    if (cfg.type==='text') state.settings[key] = raw.trim();
+    else {
+      const v = parseInt(raw);
+      if (isNaN(v) || v<cfg.min || v>cfg.max) return toast('Invalid');
+      state.settings[key] = v;
+      if (key==='work_minutes') state.timer.remainingSec = v*60;
+    }
+    save(); hideModal(); renderAll(); toast('Saved');
+  };
+  setTimeout(()=>document.getElementById('m-val').focus(),100);
+}
+
+// ============ NAV ============
+document.querySelectorAll('.nav-item').forEach(it=>{
+  it.onclick = () => {
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    it.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(it.dataset.scr).classList.add('active');
+    renderAll();
+  };
+});
+
+// Range tabs
+document.querySelectorAll('.range-tab').forEach(t=>{
+  t.onclick = () => {
+    document.querySelectorAll('.range-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); renderAnalytics();
+  };
+});
+
+// Mode tabs
+document.querySelectorAll('.mode-tab').forEach(t=>{
+  t.onclick = () => {
+    if (state.timer.running) return toast('Stop timer first');
+    state.timer.mode = t.dataset.mode;
+    const mins = {work: state.settings.work_minutes, short:5, long:15}[state.timer.mode];
+    state.timer.remainingSec = mins*60;
+    renderTimer();
+  };
+});
+
+// Buttons
+document.getElementById('add-task-btn').onclick = () => openAddTask(null);
+document.getElementById('new-group-btn').onclick = openNewGroup;
+
+document.getElementById('timer-toggle').onclick = () => {
+  if (state.timer.running){
+    state.timer.running = false;
+    clearInterval(state.timer._int);
+  } else {
+    state.timer.running = true;
+    state.timer._startedAt = Date.now();
+    const initial = state.timer.remainingSec;
+    state.timer._int = setInterval(()=>{
+      const el = Math.floor((Date.now()-state.timer._startedAt)/1000);
+      const rem = initial - el;
+      if (rem<=0){
+        clearInterval(state.timer._int);
+        state.timer.running = false;
+        if (state.timer.mode==='work'){
+          state.pomoLaps++;
+          addMinutes(state.settings.work_minutes, true);
+          const cycle = state.settings.long_break_after;
+          state.timer.mode = (state.pomoLaps % cycle === 0) ? 'long' : 'short';
+        } else state.timer.mode = 'work';
+        const mins = {work:state.settings.work_minutes,short:5,long:15}[state.timer.mode];
+        state.timer.remainingSec = mins*60;
+        state.timer.lapIndex = state.pomoLaps % state.settings.long_break_after;
+        save(); renderAll(); toast('Session complete');
+      } else {
+        state.timer.remainingSec = rem;
+        renderTimer();
+      }
+    }, 200);
+  }
+  renderTimer();
+};
+document.getElementById('timer-reset').onclick = () => {
+  state.timer.running = false;
+  clearInterval(state.timer._int);
+  const mins = {work:state.settings.work_minutes,short:5,long:15}[state.timer.mode];
+  state.timer.remainingSec = mins*60;
+  renderTimer(); toast('Reset');
+};
+document.getElementById('sw-toggle').onclick = () => {
+  if (state.swRunning){
+    state.swElapsed += Date.now()-state.swStartedAt;
+    state.swRunning = false;
+    state.swStartedAt = 0;
+    const mins = Math.floor(state.swElapsed/60000);
+    if (mins > 0){ addMinutes(mins, true); toast('Logged '+mins+' min'); state.swElapsed = 0; }
+    save(); renderAll();
+  } else {
+    state.swRunning = true;
+    state.swStartedAt = Date.now();
+    save(); renderAll();
+  }
+};
+document.querySelectorAll('.set-row[data-set]').forEach(r=>r.onclick=()=>openEditSetting(r.dataset.set));
+document.getElementById('reset-btn').onclick = () => {
+  showModal(`
+    <div class="modal-title">RESET ALL DATA<span class="modal-x" onclick="hideModal()">×</span></div>
+    <div style="color:#999;font-size:12px;margin-bottom:20px">Erases everything. Cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn modal-cancel" onclick="hideModal()">CANCEL</button>
+      <button class="btn btn-primary" id="m-reset">RESET</button>
+    </div>
+  `);
+  document.getElementById('m-reset').onclick = () => {
+    Object.keys(localStorage).forEach(k=>{if(k.startsWith('flow_'))localStorage.removeItem(k)});
+    location.reload();
+  };
+};
+
+// Roll day on load
+rollDay();
+
+// Save stopwatch every 2s
+setInterval(()=>save(), 2000);
+
+// Tick every 200ms for live update
+setInterval(()=>{ if (state.swRunning) renderStopwatchCard(); }, 200);
+
+// Clock tick every 30s
+setInterval(()=>renderDash(), 30000);
+
+// Service worker registration
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+// Init
+renderAll();
+
+// Save as soon as possible
+window.addEventListener('beforeunload', ()=>save());
+</script>
+</body>
+</html>
